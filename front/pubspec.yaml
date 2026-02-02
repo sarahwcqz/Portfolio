@@ -38,6 +38,12 @@ dependencies:
   # to put keys in .env file that won't be pushed on git
   flutter_dotenv: ^6.0.0
 
+  # to use OSM map
+  flutter_map: ^6.1.0
+
+   # use latitude/longitude
+  latlong2: ^0.9.1
+
   # Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
