@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import './map_page.dart';
+
 
 //--------------------------------------- LOGIN WIDGET ----------------------------------
 class LoginPage extends StatefulWidget {
@@ -11,38 +13,45 @@ class LoginPage extends StatefulWidget {
 
 // contains logic + state of the page
 class _LoginPageState extends State<LoginPage> {
-  // Les "Controllers" permettent de récupérer ce que l'utilisateur tape dans les champs.
+  // controllers to get what user inputs
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
  
-  // Une variable pour savoir si on est en train de communiquer avec le serveur.
+  // loading flag to display loading circle later
   bool _isLoading = false;
 
 // ======================================= FUNCTIONS ======================================
 
   // ---------------------------------- SIGN IN ----------------------------------------
   Future<void> _signIn() async {
-    // On passe l'état à "chargement" pour afficher le spinner.
+    // set loading flag to 'loading'
     setState(() => _isLoading = true);
     try {
-      // On demande à Supabase de vérifier l'email et le mot de passe.
+      // Supabase verifies email + pswd
       await Supabase.instance.client.auth.signInWithPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
      
+      // if connection successful
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Connexion réussie !')),
         );
+        // redirect to MapPage
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MapPage()),
+        );
       }
+    // if connection failed
     } on AuthException catch (error) {
-      // Si Supabase renvoie une erreur (ex: mauvais mot de passe), on l'affiche.
+      // display error msg
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error.message), backgroundColor: Colors.red),
       );
     } finally {
-      // Une fois terminé (succès ou erreur), on arrête le chargement.
+      // set loading flag to 'off'
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -101,7 +110,7 @@ class _LoginPageState extends State<LoginPage> {
             TextField(
               controller: _passwordController,
               decoration: const InputDecoration(labelText: 'Mot de passe'),
-              obscureText: true, // Hydes characters and displays points
+              obscureText: true, // Hydes characters and displays points (privacy of pswd)
             ),
             const SizedBox(height: 20),
            
