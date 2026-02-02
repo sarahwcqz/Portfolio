@@ -31,7 +31,13 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
+  #connection flutter to supabase, for user authentication
+  supabase_flutter: ^2.12.0
+
+  # to put keys in .env file that won't be pushed on git
+  flutter_dotenv: ^6.0.0
+
+  # Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
