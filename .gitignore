@@ -44,11 +44,13 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-#fichier node jscd ..
+#Node js
 node_modules/
 dist/
 .npm/
 
+# Keys etc
+.env
 
-#fichier reglage front automatique attitré par pc config
+#fichier reglage front automatique atittré par pc config
 .vscode/
