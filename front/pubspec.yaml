@@ -31,7 +31,20 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
+
+  #connection flutter to supabase, for user authentication
+  supabase_flutter: ^2.12.0
+
+  # to put keys in .env file that won't be pushed on git
+  flutter_dotenv: ^6.0.0
+
+  # to use OSM map
+  flutter_map: ^6.1.0
+
+   # use latitude/longitude
+  latlong2: ^0.9.1
+
+  # Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
@@ -62,6 +75,8 @@ flutter:
   # assets:
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
+  assets:
+    - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

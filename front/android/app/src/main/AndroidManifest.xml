@@ -1,4 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- ================================= PERMMISSIONS ============================= -->
+    <!-- internet -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- geoloc -->
+
+    <!-- contact -->
+
+
     <application
         android:label="front"
         android:name="${applicationName}"

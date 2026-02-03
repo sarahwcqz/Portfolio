@@ -1,3 +1,5 @@
+###################################################### FRONT #######################################################################
+#--------------------------------- Automatically generated --------------------------------------
 # Miscellaneous
 *.class
 *.log
@@ -30,7 +32,7 @@ migrate_working_dir/
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
-/build/
+build/
 /coverage/
 
 # Symbolication related
@@ -44,11 +46,27 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-#fichier node jscd ..
+# pour le build
+front/linux/flutter/generated_plugin_registrant.cc
+front/linux/flutter/generated_plugin_registrant.h
+front/linux/flutter/generated_plugins.cmake
+front/macos/Flutter/GeneratedPluginRegistrant.swift
+front/windows/flutter/generated_plugin_registrant.cc
+front/windows/flutter/generated_plugin_registrant.h
+front/windows/flutter/generated_plugins.cmake
+
+
+###################################################### BACK #######################################################################
+#Node js
 node_modules/
 dist/
 .npm/
 
 
-#fichier reglage front automatique attitré par pc config
+###################################################### GLOBAL #######################################################################
+
+# Keys etc
+.env
+
+#fichier reglage front automatique atittré par pc config
 .vscode/
