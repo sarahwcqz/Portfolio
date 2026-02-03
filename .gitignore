@@ -46,6 +46,16 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# pour le build
+front/linux/flutter/generated_plugin_registrant.cc
+front/linux/flutter/generated_plugin_registrant.h
+front/linux/flutter/generated_plugins.cmake
+front/macos/Flutter/GeneratedPluginRegistrant.swift
+front/windows/flutter/generated_plugin_registrant.cc
+front/windows/flutter/generated_plugin_registrant.h
+front/windows/flutter/generated_plugins.cmake
+
+
 ###################################################### BACK #######################################################################
 #Node js
 node_modules/
