@@ -178,7 +178,7 @@ Future<void> _determinePosition() async {
   // transforms it to start/dest point + address, and zooms on result (start + dest)
 
     Future<void> _openAddressSearch({required bool isStart}) async {
-    final result = await Navigator.push<_PickedLocation>(
+    final result = await Navigator.push<PickedLocation>(
       context,
       MaterialPageRoute(builder: (_) => const AddressSearchPage()),
     );
@@ -219,7 +219,7 @@ Future<void> _determinePosition() async {
     );
 
     final response = await http.post(
-      Uri.parse('https://ton-backend.com/api/itineraire'),
+      Uri.parse('https://ton-backend.com/api/itineraire'), // DEBUG
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(request.toJson()),
     );
