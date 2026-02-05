@@ -114,6 +114,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      //ajout de la couleur noir pour armosnisé avec la foto
       backgroundColor: Colors.black,
       appBar: AppBar(title: const Text('Connexion')),
       body: Padding(
@@ -121,7 +122,7 @@ class _LoginPageState extends State<LoginPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // ------------------------------- logo image----------------------------------
+            // ------------------------------- logo image----------------------------------nouveau
             Image.asset(
               'assets/images/logoAllygo.png',
               width: 250,
