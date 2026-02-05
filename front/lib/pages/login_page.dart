@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import './map_page.dart';
-
+//import pour preference email
+import 'package:shared_preferences/shared_preferences.dart';
 
 //--------------------------------------- LOGIN WIDGET ----------------------------------
 class LoginPage extends StatefulWidget {
@@ -16,11 +17,26 @@ class _LoginPageState extends State<LoginPage> {
   // controllers to get what user inputs
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
- 
+
   // loading flag to display loading circle later
   bool _isLoading = false;
 
-// ======================================= FUNCTIONS ======================================
+  // ======================================= FUNCTIONS ======================================
+
+  // -------------------------------- LOAD SAVED EMAIL (NOUVEAU) ---------------------------
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedEmail();
+  }
+
+  Future<void> _loadSavedEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedEmail = prefs.getString('saved_email');
+    if (savedEmail != null) {
+      _emailController.text = savedEmail;
+    }
+  }
 
   // ---------------------------------- SIGN IN ----------------------------------------
   Future<void> _signIn() async {
@@ -32,19 +48,23 @@ class _LoginPageState extends State<LoginPage> {
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
-     
+
+      // Sauvegarder l'email Nouveau
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('saved_email', _emailController.text.trim());
+
       // if connection successful
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Connexion réussie !')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Connexion réussie !')));
         // redirect to MapPage
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const MapPage()),
         );
       }
-    // if connection failed
+      // if connection failed
     } on AuthException catch (error) {
       // display error msg
       ScaffoldMessenger.of(context).showSnackBar(
@@ -71,12 +91,12 @@ class _LoginPageState extends State<LoginPage> {
           const SnackBar(content: Text('Vérifiez vos emails pour confirmer !')),
         );
       }
-    // if failure => display error message
+      // if failure => display error message
     } on AuthException catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error.message), backgroundColor: Colors.red),
       );
-    // update state flag
+      // update state flag
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -90,16 +110,24 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-// =============================================== UI ===========================================
+  // =============================================== UI ===========================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(title: const Text('Connexion')),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // ------------------------------- logo image----------------------------------
+            Image.asset(
+              'assets/images/logoAllygo.png',
+              width: 250,
+              height: 250,
+            ),
+            const SizedBox(height: 30),
             // ------------------------------- email -------------------------------------
             TextField(
               controller: _emailController,
@@ -110,10 +138,11 @@ class _LoginPageState extends State<LoginPage> {
             TextField(
               controller: _passwordController,
               decoration: const InputDecoration(labelText: 'Mot de passe'),
-              obscureText: true, // Hydes characters and displays points (privacy of pswd)
+              obscureText:
+                  true, // Hydes characters and displays points (privacy of pswd)
             ),
             const SizedBox(height: 20),
-           
+
             // If loading => loading circle
             if (_isLoading)
               const CircularProgressIndicator()

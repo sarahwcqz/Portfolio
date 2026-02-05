@@ -11,8 +11,6 @@ import 'package:http/http.dart' as http;
 // others pages
 import 'address_search_page.dart';
 
-
-
 //============================================================================================================================
 //========================================================== CLASSES =========================================================
 //============================================================================================================================
@@ -29,11 +27,11 @@ class RouteRequest {
   });
 
   Map<String, dynamic> toJson() => {
-        'start_lat': startLat,
-        'start_lng': startLng,
-        'dest_lat': destLat,
-        'dest_lng': destLng,
-      };
+    'start_lat': startLat,
+    'start_lng': startLng,
+    'dest_lat': destLat,
+    'dest_lng': destLng,
+  };
 }
 
 //============================================ MAP  ==============================================
@@ -50,7 +48,7 @@ class _MapPageState extends State<MapPage> {
   final MapController _mapController = MapController();
   // Default position (Paris)
   LatLng _currentPosition = const LatLng(48.8566, 2.3522);
-    // POINT DEPART
+  // POINT DEPART
   LatLng? _startPoint;
   String _startAddress = "Position actuelle";
 
@@ -58,98 +56,98 @@ class _MapPageState extends State<MapPage> {
   LatLng? _destinationPoint;
   String _destinationAddress = "Choisir la destination";
 
-// --------------------------- INIT ------------------------------
-// when starting, calls determinePosition function
+  // --------------------------- INIT ------------------------------
+  // when starting, calls determinePosition function
   @override
   void initState() {
     super.initState();
     _determinePosition();
   }
 
-// =============================================================================================================================
-// ============================================================ FUNCTIONS ======================================================
-// =============================================================================================================================
+  // =============================================================================================================================
+  // ============================================================ FUNCTIONS ======================================================
+  // =============================================================================================================================
 
-// ======================================================= determinePosition =================================================
-// Asks for permission + get location
+  // ======================================================= determinePosition =================================================
+  // Asks for permission + get location
 
-Future<void> _determinePosition() async {
-  // GPS activation (T/F)
-  bool serviceEnabled;
+  Future<void> _determinePosition() async {
+    // GPS activation (T/F)
+    bool serviceEnabled;
 
-  LocationPermission permission;
+    LocationPermission permission;
 
-//----------------------------------- permissions -------------------------------------
+    //----------------------------------- permissions -------------------------------------
 
-  // checks GPS unabled, if not displays msg
-  serviceEnabled = await Geolocator.isLocationServiceEnabled();
-  if (!serviceEnabled) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Veuillez activer le GPS"))
-      );
-    });
-    return;
-  }
-
-  // Checks GPS permission, if not, asks GPS perm, if denied, displays msg
-  permission = await Geolocator.checkPermission();
-  if (permission == LocationPermission.denied) {
-    permission = await Geolocator.requestPermission();
-    if (permission == LocationPermission.denied) {
+    // checks GPS unabled, if not displays msg
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Permission GPS refusée"))
+          const SnackBar(content: Text("Veuillez activer le GPS")),
         );
       });
       return;
     }
-  }
 
-// ---------------------------------- get location ----------------------------------------
+    // Checks GPS permission, if not, asks GPS perm, if denied, displays msg
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Permission GPS refusée")),
+          );
+        });
+        return;
+      }
+    }
 
-  // First, sets position to last know position (avoid big latency when clicking 'recenter')
-  Position? position = await Geolocator.getLastKnownPosition();
+    // ---------------------------------- get location ----------------------------------------
 
-  // sets currentPosition to LastKnowPosition and moves map to currentPosition (while waiting for current position to be found)
-  if (position != null) {
-    setState(() {
-      _currentPosition = LatLng(position.latitude, position.longitude);
-    });
-    _mapController.move(_currentPosition, 15.0);
-  }
+    // First, sets position to last know position (avoid big latency when clicking 'recenter')
+    Position? position = await Geolocator.getLastKnownPosition();
 
-  // get real current position with high accuracy (while displaying LastKnowPosition)
-  try {
-    Position current = await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-      ),
-    );
-
-    // If LastKnow not same than current, update and move map to current 
-    if (_currentPosition.latitude != current.latitude ||
-        _currentPosition.longitude != current.longitude) {
+    // sets currentPosition to LastKnowPosition and moves map to currentPosition (while waiting for current position to be found)
+    if (position != null) {
       setState(() {
-        _currentPosition = LatLng(current.latitude, current.longitude);
+        _currentPosition = LatLng(position.latitude, position.longitude);
       });
       _mapController.move(_currentPosition, 15.0);
     }
 
-    // pass location to updateAddress to get a string translation (for UI later)
-    await _updateAddressFromCoords(_currentPosition);
-  // if no current position available, display msg
-  } catch (e) {
+    // get real current position with high accuracy (while displaying LastKnowPosition)
+    try {
+      Position current = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+
+      // If LastKnow not same than current, update and move map to current
+      if (_currentPosition.latitude != current.latitude ||
+          _currentPosition.longitude != current.longitude) {
+        setState(() {
+          _currentPosition = LatLng(current.latitude, current.longitude);
+        });
+        _mapController.move(_currentPosition, 15.0);
+      }
+
+      // pass location to updateAddress to get a string translation (for UI later)
+      await _updateAddressFromCoords(_currentPosition);
+      // if no current position available, display msg
+    } catch (e) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Impossible d'obtenir la position exact: $e"))
+          SnackBar(content: Text("Impossible d'obtenir la position exact: $e")),
         );
       });
+    }
   }
-}
 
-// ======================================================= updateAddressFromCoords =================================================
-// translates current location into string to display it readably (reverse geocoding)
+  // ======================================================= updateAddressFromCoords =================================================
+  // translates current location into string to display it readably (reverse geocoding)
 
   Future<void> _updateAddressFromCoords(LatLng point) async {
     try {
@@ -177,7 +175,7 @@ Future<void> _determinePosition() async {
   // opens a search address bar, calls address search page, gets what search page returns (PickedLocation),
   // transforms it to start/dest point + address, and zooms on result (start + dest)
 
-    Future<void> _openAddressSearch({required bool isStart}) async {
+  Future<void> _openAddressSearch({required bool isStart}) async {
     final result = await Navigator.push<PickedLocation>(
       context,
       MaterialPageRoute(builder: (_) => const AddressSearchPage()),
@@ -201,7 +199,7 @@ Future<void> _determinePosition() async {
   // ======================================================= openAddressSearch =================================================
   // shapes the request that will be sent to back when user presses "let's go" button
 
-    Future<void> _sendRouteRequest() async {
+  Future<void> _sendRouteRequest() async {
     // if no start + dest was chosen
     if (_startPoint == null || _destinationPoint == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -229,14 +227,14 @@ Future<void> _determinePosition() async {
       final data = jsonDecode(response.body);
       // TODO: traiter la réponse (itinéraire, polyline, instructions)
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Itinéraire reçu du backend")),  // DEBUG
+        const SnackBar(content: Text("Itinéraire reçu du backend")), // DEBUG
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Erreur serveur")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Erreur serveur")));
     }
-  }  
+  }
 
   // ==================================================================================================================
   // ======================================================= UI =======================================================
@@ -270,7 +268,11 @@ Future<void> _determinePosition() async {
                       point: _startPoint!,
                       width: 60,
                       height: 60,
-                      child: const Icon(Icons.location_pin, color: Colors.red, size: 40),
+                      child: const Icon(
+                        Icons.location_pin,
+                        color: Colors.red,
+                        size: 40,
+                      ),
                     ),
 
                   // destination
@@ -279,9 +281,13 @@ Future<void> _determinePosition() async {
                       point: _destinationPoint!,
                       width: 60,
                       height: 60,
-                      child: const Icon(Icons.flag, color: Colors.green, size: 40),
+                      child: const Icon(
+                        Icons.flag,
+                        color: Colors.green,
+                        size: 40,
+                      ),
                     ),
-                  
+
                   // current position(user on the map)
                   Marker(
                     point: _currentPosition,
