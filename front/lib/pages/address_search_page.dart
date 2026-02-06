@@ -64,6 +64,43 @@ class _AddressSearchPageState extends State<AddressSearchPage> {
     super.dispose();
   }
 
+  
+Future<AddressSuggestion?> _getCurrentLocationSuggestion() async {
+    try {
+      // Pas besoin de permissions ni de Geolocator !
+      // On utilise directement la position passée en paramètre
+      
+      String address = "Ma position actuelle";
+      
+      // Géocodage inversé pour obtenir l'adresse
+      try {
+        final response = await http.get(
+          Uri.parse(
+            'https://nominatim.openstreetmap.org/reverse?lat=${widget.currentPosition.latitude}&lon=${widget.currentPosition.longitude}&format=json',
+          ),
+          headers: {'User-Agent': 'com.example.front'},
+        ).timeout(const Duration(seconds: 3));
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          address = data['display_name'] ?? "Ma position actuelle";
+        }
+      } catch (e) {
+        // Garde "Ma position actuelle" par défaut
+      }
+
+      return AddressSuggestion(
+        label: address,
+        lat: widget.currentPosition.latitude,
+        lon: widget.currentPosition.longitude,
+        isCurrentPosition: true,
+      );
+    } catch (e) {
+      print('Erreur: $e');
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,7 +109,6 @@ class _AddressSearchPageState extends State<AddressSearchPage> {
         padding: const EdgeInsets.all(16),
         child: TypeAheadField<AddressSuggestion>(
           controller: _controller,
-          //  waits 300 ms after last typing before calling API
           debounceDuration: const Duration(milliseconds: 300),
           builder: (context, controller, focusNode) {
             return TextField(
@@ -87,36 +123,57 @@ class _AddressSearchPageState extends State<AddressSearchPage> {
             );
           },
           suggestionsCallback: (pattern) async {
-            // waits for 3 char before launching API call
-            if (pattern.length < 3) return [];
-            
+            List<AddressSuggestion> suggestions = [];
+
+            // Toujours ajouter "Ma position actuelle" en premier
+            final currentLocation = await _getCurrentLocationSuggestion();
+            if (currentLocation != null) {
+              suggestions.add(currentLocation);
+            }
+
+            // Si moins de 3 caractères, retourne seulement la position actuelle
+            if (pattern.length < 3) return suggestions;
+
+            // Sinon, ajoute les résultats de recherche
             try {
               final response = await http.get(
                 Uri.parse(
                     'https://nominatim.openstreetmap.org/search?q=$pattern&format=json&addressdetails=1&limit=5'),
                 headers: {'User-Agent': 'com.example.front'},
               ).timeout(const Duration(seconds: 5));
-              
-              if (response.statusCode != 200) return [];
-              
-              final List data = jsonDecode(response.body);
-              return data
-                  .cast<Map<String, dynamic>>()
-                  .map((json) => AddressSuggestion.fromJson(json))
-                  .toList();
+
+              if (response.statusCode == 200) {
+                final List data = jsonDecode(response.body);
+                suggestions.addAll(
+                  data
+                      .cast<Map<String, dynamic>>()
+                      .map((json) => AddressSuggestion.fromJson(json))
+                      .toList(),
+                );
+              }
             } catch (e) {
               print('Erreur de recherche: $e');
-              return [];
             }
+
+            return suggestions;
           },
           itemBuilder: (context, suggestion) {
             return ListTile(
-              leading: const Icon(Icons.place),
-              title: Text(suggestion.label),
+              leading: Icon(
+                suggestion.isCurrentPosition ? Icons.my_location : Icons.place,
+                color: suggestion.isCurrentPosition ? Colors.blue : null,
+              ),
+              title: Text(
+                suggestion.label,
+                style: TextStyle(
+                  fontWeight: suggestion.isCurrentPosition
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+                ),
+              ),
             );
           },
           onSelected: (suggestion) {
-            // wait for widget to be stable before poping
             Future.microtask(() {
               if (mounted) {
                 Navigator.pop(
@@ -124,6 +181,7 @@ class _AddressSearchPageState extends State<AddressSearchPage> {
                   PickedLocation(
                     suggestion.label,
                     LatLng(suggestion.lat, suggestion.lon),
+                    isCurrentPosition: suggestion.isCurrentPosition,
                   ),
                 );
               }
