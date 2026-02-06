@@ -9,7 +9,13 @@ import 'package:flutter_typeahead/flutter_typeahead.dart';
 class PickedLocation {
   final String address;
   final LatLng latLng;
-  PickedLocation(this.address, this.latLng);
+  final bool isCurrentPosition;
+
+  PickedLocation(
+    this.address,
+    this.latLng,
+    {this.isCurrentPosition = false}
+    );
 }
  // -------------------------------------
 
@@ -17,11 +23,13 @@ class AddressSuggestion {
   final String label;
   final double lat;
   final double lon;
+  final bool isCurrentPosition;
 
   AddressSuggestion({
     required this.label,
     required this.lat,
     required this.lon,
+    this.isCurrentPosition = false,
   });
 
   factory AddressSuggestion.fromJson(Map<String, dynamic> json) {
@@ -36,7 +44,12 @@ class AddressSuggestion {
 
 //--------------------------------------- ADDRESS SEARCH PAGE ----------------------------------
 class AddressSearchPage extends StatefulWidget {
-  const AddressSearchPage({super.key});
+final LatLng currentPosition;
+
+  const AddressSearchPage({
+    super.key,
+    required this.currentPosition,
+    });
 
   @override
   State<AddressSearchPage> createState() => _AddressSearchPageState();
@@ -103,7 +116,7 @@ class _AddressSearchPageState extends State<AddressSearchPage> {
             );
           },
           onSelected: (suggestion) {
-            // Attendre que le widget soit stable avant de pop
+            // wait for widget to be stable before poping
             Future.microtask(() {
               if (mounted) {
                 Navigator.pop(

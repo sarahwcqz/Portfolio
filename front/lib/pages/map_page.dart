@@ -133,9 +133,15 @@ class _MapPageState extends State<MapPage> {
         });
         _mapController.move(_currentPosition, 15.0);
       }
+      
 
-      // pass location to updateAddress to get a string translation (for UI later)
-      await _updateAddressFromCoords(_currentPosition);
+      // if no starting point selected by user, default on geoloc
+      if (_startPoint == null) {
+        setState(() {
+          _startPoint = _currentPosition;
+        });
+      }
+
       // if no current position available, display msg
     } catch (e) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -146,30 +152,7 @@ class _MapPageState extends State<MapPage> {
     }
   }
 
-  // ======================================================= updateAddressFromCoords =================================================
-  // translates current location into string to display it readably (reverse geocoding)
 
-  Future<void> _updateAddressFromCoords(LatLng point) async {
-    try {
-      final response = await http.get(
-        Uri.parse(
-          'https://nominatim.openstreetmap.org/reverse?lat=${point.latitude}&lon=${point.longitude}&format=json',
-        ),
-        headers: {'User-Agent': 'com.example.front'},
-      );
-
-      final data = jsonDecode(response.body);
-      setState(() {
-        _startPoint = point;
-        _startAddress = data['display_name'] ?? "Position actuelle";
-      });
-    } catch (e) {
-      setState(() {
-        _startPoint = point;
-        _startAddress = "Position actuelle";
-      });
-    }
-  }
 
   // ======================================================= openAddressSearch =================================================
   // opens a search address bar, calls address search page, gets what search page returns (PickedLocation),
@@ -178,17 +161,21 @@ class _MapPageState extends State<MapPage> {
   Future<void> _openAddressSearch({required bool isStart}) async {
     final result = await Navigator.push<PickedLocation>(
       context,
-      MaterialPageRoute(builder: (_) => const AddressSearchPage()),
+      MaterialPageRoute(builder: (_) => AddressSearchPage(currentPosition: _currentPosition,)),
     );
 
     if (result != null) {
       setState(() {
         if (isStart) {
           _startPoint = result.latLng;
-          _startAddress = result.address;
+          _startAddress = result.isCurrentPosition
+            ? "Ma position actuelle" 
+            : result.address;
         } else {
           _destinationPoint = result.latLng;
-          _destinationAddress = result.address;
+          _destinationAddress = result.isCurrentPosition 
+            ? "Ma position actuelle" 
+            : result.address;
         }
       });
       // Centers on result <------------------------ change it later?
@@ -196,7 +183,7 @@ class _MapPageState extends State<MapPage> {
     }
   }
 
-  // ======================================================= openAddressSearch =================================================
+  // ======================================================= sendRouteRequest =================================================
   // shapes the request that will be sent to back when user presses "let's go" button
 
   Future<void> _sendRouteRequest() async {
@@ -311,7 +298,7 @@ class _MapPageState extends State<MapPage> {
             right: 16,
             child: Column(
               children: [
-                // Champ point de départ
+                // ------------ start point ------------------
                 GestureDetector(
                   onTap: () => _openAddressSearch(isStart: true),
                   child: Material(
@@ -330,7 +317,7 @@ class _MapPageState extends State<MapPage> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                // Champ destination
+                // ------------- destination point ------------
                 GestureDetector(
                   onTap: () => _openAddressSearch(isStart: false),
                   child: Material(

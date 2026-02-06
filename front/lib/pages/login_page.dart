@@ -116,7 +116,6 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       //ajout de la couleur noir pour armosnisé avec la foto
       backgroundColor: Colors.black,
-      appBar: AppBar(title: const Text('Connexion')),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
