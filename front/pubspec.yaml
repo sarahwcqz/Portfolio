@@ -63,6 +63,9 @@ dependencies:
   #pour sauvegarder le mail de l user--------------------------nouveau
   shared_preferences: ^2.5.4
 
+  #pour avoir des erreur precise sans catch e par exemple a la place des print
+  logger: ^2.6.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

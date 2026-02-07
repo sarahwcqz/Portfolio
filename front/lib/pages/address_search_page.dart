@@ -5,6 +5,10 @@ import 'package:http/http.dart' as http;
 // auto-completion
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 
+import 'package:logger/logger.dart';
+
+final logger = Logger();
+
 //--------------------------------------- PICKED LOCATION MODEL ----------------------------------
 class PickedLocation {
   final String address;
@@ -89,7 +93,7 @@ class _AddressSearchPageState extends State<AddressSearchPage> {
         isCurrentPosition: true,
       );
     } catch (e) {
-      print('Erreur: $e');
+      logger.e('Erreur', error: e);
       return null;
     }
   }
@@ -148,7 +152,7 @@ class _AddressSearchPageState extends State<AddressSearchPage> {
                 );
               }
             } catch (e) {
-              print('Erreur de recherche: $e');
+              logger.e('Erreur de recherche', error: e);
             }
 
             return suggestions;
