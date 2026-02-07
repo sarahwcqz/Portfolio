@@ -11,13 +11,9 @@ class PickedLocation {
   final LatLng latLng;
   final bool isCurrentPosition;
 
-  PickedLocation(
-    this.address,
-    this.latLng,
-    {this.isCurrentPosition = false}
-    );
+  PickedLocation(this.address, this.latLng, {this.isCurrentPosition = false});
 }
- // -------------------------------------
+// -------------------------------------
 
 class AddressSuggestion {
   final String label;
@@ -41,15 +37,11 @@ class AddressSuggestion {
   }
 }
 
-
 //--------------------------------------- ADDRESS SEARCH PAGE ----------------------------------
 class AddressSearchPage extends StatefulWidget {
-final LatLng currentPosition;
+  final LatLng currentPosition;
 
-  const AddressSearchPage({
-    super.key,
-    required this.currentPosition,
-    });
+  const AddressSearchPage({super.key, required this.currentPosition});
 
   @override
   State<AddressSearchPage> createState() => _AddressSearchPageState();
@@ -64,22 +56,23 @@ class _AddressSearchPageState extends State<AddressSearchPage> {
     super.dispose();
   }
 
-  
-Future<AddressSuggestion?> _getCurrentLocationSuggestion() async {
+  Future<AddressSuggestion?> _getCurrentLocationSuggestion() async {
     try {
       // Pas besoin de permissions ni de Geolocator !
       // On utilise directement la position passée en paramètre
-      
+
       String address = "Ma position actuelle";
-      
+
       // Géocodage inversé pour obtenir l'adresse
       try {
-        final response = await http.get(
-          Uri.parse(
-            'https://nominatim.openstreetmap.org/reverse?lat=${widget.currentPosition.latitude}&lon=${widget.currentPosition.longitude}&format=json',
-          ),
-          headers: {'User-Agent': 'com.example.front'},
-        ).timeout(const Duration(seconds: 3));
+        final response = await http
+            .get(
+              Uri.parse(
+                'https://nominatim.openstreetmap.org/reverse?lat=${widget.currentPosition.latitude}&lon=${widget.currentPosition.longitude}&format=json',
+              ),
+              headers: {'User-Agent': 'com.example.front'},
+            )
+            .timeout(const Duration(seconds: 3));
 
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
@@ -90,7 +83,7 @@ Future<AddressSuggestion?> _getCurrentLocationSuggestion() async {
       }
 
       return AddressSuggestion(
-        label: address,
+        label: "Ma position",
         lat: widget.currentPosition.latitude,
         lon: widget.currentPosition.longitude,
         isCurrentPosition: true,
@@ -136,11 +129,14 @@ Future<AddressSuggestion?> _getCurrentLocationSuggestion() async {
 
             // Sinon, ajoute les résultats de recherche
             try {
-              final response = await http.get(
-                Uri.parse(
-                    'https://nominatim.openstreetmap.org/search?q=$pattern&format=json&addressdetails=1&limit=5'),
-                headers: {'User-Agent': 'com.example.front'},
-              ).timeout(const Duration(seconds: 5));
+              final response = await http
+                  .get(
+                    Uri.parse(
+                      'https://nominatim.openstreetmap.org/search?q=$pattern&format=json&addressdetails=1&limit=5',
+                    ),
+                    headers: {'User-Agent': 'com.example.front'},
+                  )
+                  .timeout(const Duration(seconds: 5));
 
               if (response.statusCode == 200) {
                 final List data = jsonDecode(response.body);

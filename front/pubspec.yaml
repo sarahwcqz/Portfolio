@@ -92,7 +92,7 @@ flutter:
   #   - images/a_dot_ham.jpeg
   assets:
   # Attention j ai deplacer le .env suite probleme windows et le chemin a changer
-    - ../.env
+    - .env
     #add path of images----------------------------nouveau
     - assets/images/
 
