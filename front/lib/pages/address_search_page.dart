@@ -4,9 +4,10 @@ import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 // auto-completion
 import 'package:flutter_typeahead/flutter_typeahead.dart';
-
+//import for logger
 import 'package:logger/logger.dart';
 
+//variable for use logger in catch
 final logger = Logger();
 
 //--------------------------------------- PICKED LOCATION MODEL ----------------------------------
