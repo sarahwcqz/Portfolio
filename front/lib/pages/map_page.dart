@@ -146,7 +146,7 @@ class _MapPageState extends State<MapPage> {
     } catch (e) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Impossible d'obtenir la position exact: $e")),
+          SnackBar(content: Text("Impossible d'obtenir la position exacte: $e")),
         );
       });
     }
