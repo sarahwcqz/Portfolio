@@ -60,6 +60,8 @@ front/windows/flutter/generated_plugins.cmake
 #python
 dist/
 /back/env
+__pycache__/
+
 
 
 ###################################################### GLOBAL #######################################################################
