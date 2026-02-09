@@ -11,15 +11,20 @@ import 'package:logger/logger.dart';
 final logger = Logger();
 
 //--------------------------------------- PICKED LOCATION MODEL ----------------------------------
+// what will be returned to previous screen
 class PickedLocation {
   final String address;
   final LatLng latLng;
   final bool isCurrentPosition;
 
-  PickedLocation(this.address, this.latLng, {this.isCurrentPosition = false});
+  PickedLocation(
+    this.address,
+    this.latLng,
+    {this.isCurrentPosition = false}
+    );
 }
-// -------------------------------------
-
+// ------------------------------------- ADDRESS SUGESTION MODEL ----------------------------------
+// inner model for suggestion
 class AddressSuggestion {
   final String label;
   final double lat;
@@ -33,6 +38,7 @@ class AddressSuggestion {
     this.isCurrentPosition = false,
   });
 
+  // converts lat + long in double
   factory AddressSuggestion.fromJson(Map<String, dynamic> json) {
     return AddressSuggestion(
       label: json['display_name'] as String,
@@ -68,7 +74,7 @@ class _AddressSearchPageState extends State<AddressSearchPage> {
 
       String address = "Ma position actuelle";
 
-      // Géocodage inversé pour obtenir l'adresse
+      // Géocodage inversé pour obtenir l'adresse   // quelle utilite? actuellement pas dáffichage de l'adresse de la position actuelle. pour garder en favori?
       try {
         final response = await http
             .get(
