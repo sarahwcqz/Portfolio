@@ -133,7 +133,6 @@ class _MapPageState extends State<MapPage> {
         });
         _mapController.move(_currentPosition, 15.0);
       }
-      
 
       // if no starting point selected by user, default on geoloc
       if (_startPoint == null) {
@@ -152,8 +151,6 @@ class _MapPageState extends State<MapPage> {
     }
   }
 
-
-
   // ======================================================= openAddressSearch =================================================
   // opens a search address bar, calls address search page, gets what search page returns (PickedLocation),
   // transforms it to start/dest point + address, and zooms on result (start + dest)
@@ -161,7 +158,9 @@ class _MapPageState extends State<MapPage> {
   Future<void> _openAddressSearch({required bool isStart}) async {
     final result = await Navigator.push<PickedLocation>(
       context,
-      MaterialPageRoute(builder: (_) => AddressSearchPage(currentPosition: _currentPosition,)),
+      MaterialPageRoute(
+        builder: (_) => AddressSearchPage(currentPosition: _currentPosition),
+      ),
     );
 
     if (result != null) {
@@ -169,13 +168,13 @@ class _MapPageState extends State<MapPage> {
         if (isStart) {
           _startPoint = result.latLng;
           _startAddress = result.isCurrentPosition
-            ? "Ma position actuelle" 
-            : result.address;
+              ? "Ma position actuelle"
+              : result.address;
         } else {
           _destinationPoint = result.latLng;
-          _destinationAddress = result.isCurrentPosition 
-            ? "Ma position actuelle" 
-            : result.address;
+          _destinationAddress = result.isCurrentPosition
+              ? "Ma position actuelle"
+              : result.address;
         }
       });
       // Centers on result <------------------------ change it later?

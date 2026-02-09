@@ -4,8 +4,14 @@ import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 // auto-completion
 import 'package:flutter_typeahead/flutter_typeahead.dart';
+//import for logger
+import 'package:logger/logger.dart';
+
+//variable for use logger in catch
+final logger = Logger();
 
 //--------------------------------------- PICKED LOCATION MODEL ----------------------------------
+// what will be returned to previous screen
 class PickedLocation {
   final String address;
   final LatLng latLng;
@@ -17,8 +23,8 @@ class PickedLocation {
     {this.isCurrentPosition = false}
     );
 }
- // -------------------------------------
-
+// ------------------------------------- ADDRESS SUGESTION MODEL ----------------------------------
+// inner model for suggestion
 class AddressSuggestion {
   final String label;
   final double lat;
@@ -32,6 +38,7 @@ class AddressSuggestion {
     this.isCurrentPosition = false,
   });
 
+  // converts lat + long in double
   factory AddressSuggestion.fromJson(Map<String, dynamic> json) {
     return AddressSuggestion(
       label: json['display_name'] as String,
@@ -41,15 +48,11 @@ class AddressSuggestion {
   }
 }
 
-
 //--------------------------------------- ADDRESS SEARCH PAGE ----------------------------------
 class AddressSearchPage extends StatefulWidget {
-final LatLng currentPosition;
+  final LatLng currentPosition;
 
-  const AddressSearchPage({
-    super.key,
-    required this.currentPosition,
-    });
+  const AddressSearchPage({super.key, required this.currentPosition});
 
   @override
   State<AddressSearchPage> createState() => _AddressSearchPageState();
@@ -64,22 +67,23 @@ class _AddressSearchPageState extends State<AddressSearchPage> {
     super.dispose();
   }
 
-  
-Future<AddressSuggestion?> _getCurrentLocationSuggestion() async {
+  Future<AddressSuggestion?> _getCurrentLocationSuggestion() async {
     try {
       // Pas besoin de permissions ni de Geolocator !
       // On utilise directement la position passée en paramètre
-      
+
       String address = "Ma position actuelle";
-      
-      // Géocodage inversé pour obtenir l'adresse
+
+      // Géocodage inversé pour obtenir l'adresse   // quelle utilite? actuellement pas dáffichage de l'adresse de la position actuelle. pour garder en favori?
       try {
-        final response = await http.get(
-          Uri.parse(
-            'https://nominatim.openstreetmap.org/reverse?lat=${widget.currentPosition.latitude}&lon=${widget.currentPosition.longitude}&format=json',
-          ),
-          headers: {'User-Agent': 'com.example.front'},
-        ).timeout(const Duration(seconds: 3));
+        final response = await http
+            .get(
+              Uri.parse(
+                'https://nominatim.openstreetmap.org/reverse?lat=${widget.currentPosition.latitude}&lon=${widget.currentPosition.longitude}&format=json',
+              ),
+              headers: {'User-Agent': 'com.example.front'},
+            )
+            .timeout(const Duration(seconds: 3));
 
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
@@ -90,13 +94,13 @@ Future<AddressSuggestion?> _getCurrentLocationSuggestion() async {
       }
 
       return AddressSuggestion(
-        label: address,
+        label: "Ma position",
         lat: widget.currentPosition.latitude,
         lon: widget.currentPosition.longitude,
         isCurrentPosition: true,
       );
     } catch (e) {
-      print('Erreur: $e');
+      logger.e('Erreur', error: e);
       return null;
     }
   }
@@ -136,11 +140,14 @@ Future<AddressSuggestion?> _getCurrentLocationSuggestion() async {
 
             // Sinon, ajoute les résultats de recherche
             try {
-              final response = await http.get(
-                Uri.parse(
-                    'https://nominatim.openstreetmap.org/search?q=$pattern&format=json&addressdetails=1&limit=5'),
-                headers: {'User-Agent': 'com.example.front'},
-              ).timeout(const Duration(seconds: 5));
+              final response = await http
+                  .get(
+                    Uri.parse(
+                      'https://nominatim.openstreetmap.org/search?q=$pattern&format=json&addressdetails=1&limit=5',
+                    ),
+                    headers: {'User-Agent': 'com.example.front'},
+                  )
+                  .timeout(const Duration(seconds: 5));
 
               if (response.statusCode == 200) {
                 final List data = jsonDecode(response.body);
@@ -152,7 +159,7 @@ Future<AddressSuggestion?> _getCurrentLocationSuggestion() async {
                 );
               }
             } catch (e) {
-              print('Erreur de recherche: $e');
+              logger.e('Erreur de recherche', error: e);
             }
 
             return suggestions;
