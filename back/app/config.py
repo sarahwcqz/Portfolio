@@ -9,6 +9,12 @@ class Settings(BaseSettings):
     #supabase
     SUPABASE_URL : str
     SUPABASE_ANON_KEY : str
+
+    #ORS
+    ORS_URL : str
+    ORS_KEY : str
+
+    # pydantic-settings class to read var from a file and map them
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
