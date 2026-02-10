@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, HTTPException
 from app.models.route import RouteRequest
 from app.config import settings
 import httpx
@@ -7,14 +7,16 @@ router = APIRouter(prefix="/routes", tags=["routes"])
 
 @router.post("/")
 async def calculate_route(payload: RouteRequest = Body(...)):
-    route = await get_route(
-        start_lat=payload.start_lat,
-        start_lng=payload.start_lng,
-        dest_lat=payload.dest_lat,
-        dest_lng=payload.dest_lng,
-    )
-    return route
-
+    try:
+        route = await get_route(
+            start_lat=payload.start_lat,
+            start_lng=payload.start_lng,
+            dest_lat=payload.dest_lat,
+            dest_lng=payload.dest_lng,
+        )
+        return route
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 ORS_URL = settings.ORS_URL
 ORS_KEY = settings.ORS_KEY
