@@ -36,7 +36,7 @@ class MyApp extends StatelessWidget {
     // basic construction of root widget
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Allygo',
+      title: 'Novi',
       theme: ThemeData.dark(),
       home: const LoginPage(),
     );
