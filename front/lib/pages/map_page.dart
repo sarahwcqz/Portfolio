@@ -166,12 +166,12 @@ class _MapPageState extends State<MapPage> {
     if (result != null) {
       setState(() {
         if (isStart) {
-          _startPoint = result.latLng;
+          _startPoint = result.latLng;                  // <- to send to back for GraphH routing
           _startAddress = result.isCurrentPosition
               ? "Ma position actuelle"
               : result.address;
         } else {
-          _destinationPoint = result.latLng;
+          _destinationPoint = result.latLng;            // <- to send to back for GraphH routing
           _destinationAddress = result.isCurrentPosition
               ? "Ma position actuelle"
               : result.address;
@@ -203,7 +203,7 @@ class _MapPageState extends State<MapPage> {
     );
 
     final response = await http.post(
-      Uri.parse('https://ton-backend.com/api/itineraire'), // DEBUG
+      Uri.parse('http://127.0.0.1:8000/api/v1/routes'),      // <---- will change when testing app
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(request.toJson()),
     );
@@ -211,7 +211,7 @@ class _MapPageState extends State<MapPage> {
     // succes / error handling
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      // TODO: traiter la réponse (itinéraire, polyline, instructions)
+      // TO DO: traiter la réponse (itinéraire, polyline, instructions)
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Itinéraire reçu du backend")), // DEBUG
       );
