@@ -8,9 +8,9 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins={"*"}, # DEV
-    allow_methods={"*"},
-    allow_headers={"*"},
+    allow_origins=["*"], # DEV
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # routing
