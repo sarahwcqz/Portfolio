@@ -17,6 +17,8 @@ ORS_URL = settings.ORS_URL
 ORS_KEY = settings.ORS_KEY
 
 
+
+
 # ==================================================== functions ============================================
 
 async def get_route(
@@ -72,10 +74,16 @@ async def calculate_route(payload: RouteRequest = Body(...)):
             start_lng=payload.start_lng,
             dest_lat=payload.dest_lat,
             dest_lng=payload.dest_lng,
-            preference="shortest",      # a bien comprendre l'interet
+            preference="shortest",
         )
 
-        # To be implemented -> route 2 w/ DB call for reports
+        route2 = await get_route(
+            start_lat=payload.start_lat,
+            start_lng=payload.start_lng,
+            dest_lat=payload.dest_lat,
+            dest_lng=payload.dest_lng,
+            preference="avoid",
+        )
 
         return {
             "success": True,
@@ -88,8 +96,16 @@ async def calculate_route(payload: RouteRequest = Body(...)):
                     "duration": route1["duration"],
                     "distance": route1["distance"],
                     "colors": "blue"
+                },
+                #route 2 : avoiding reports
+                {
+                    "route_id": "avoid",
+                    "name": "itinéraire le plus sur",
+                    "coordinates": route2["coordinates"],
+                    "duration": route2["duration"],
+                    "distance": route2["distance"],
+                    "colors": "green"
                 }
-            #route 2 : avoiding reports
             ]
 
         }
