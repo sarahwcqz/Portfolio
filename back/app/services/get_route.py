@@ -1,9 +1,10 @@
 from app.config import settings
 import httpx
 # for type verification
-from typing import Dict
+from typing import Dict, List, Optional
 # to decode polyline into -> geometry (to get the points of routes)
 import polyline
+from shapely.geometry import Polygon
 
 
 # ========================================== var ====================================
@@ -20,7 +21,8 @@ async def get_route(
     start_lng: float,
     dest_lat: float,
     dest_lng: float,
-    preference: str
+    preference: str,
+    avoid_polygons: Optional[List[Polygon]]     # DEBUG : return de create_circle_polygon bien de type Polygon?
 ) -> Dict:
     """
     Fetches a route from OpenRouteService between two coordinates (start + dest)
