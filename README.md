@@ -6,3 +6,6 @@ commande pour lancer le serveur (from back/): uvicorn app.main:app --reload
 
 commande pour mettre a jour les dpdces :
     back : pip install -r requirements.txt
+
+commande pour lancer les tests:
+back : pytest -v tests/test_get_reports_from_db.py

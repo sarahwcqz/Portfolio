@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     #supabase
     SUPABASE_URL : str
     SUPABASE_ANON_KEY : str
+    SUPABASE_SERVICE_ROLE_KEY: str
 
     #ORS
     ORS_URL : str
