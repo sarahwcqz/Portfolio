@@ -13,6 +13,11 @@ router = APIRouter(prefix="/routes", tags=["routes"])
 
 @router.post("/")
 async def calculate_route(payload: RouteRequest = Body(...)):
+    """
+    Calculates 2 itineraries :
+        - route1 : shortest
+        - route2 : safest (avoids reports)
+    """
     try:
         route1 = await get_route(
             start_lat=payload.start_lat,
