@@ -4,7 +4,7 @@ import httpx
 from typing import Dict, List, Optional
 # to decode polyline into -> geometry (to get the points of routes)
 import polyline
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, MultiPolygon, mapping
 
 
 # ========================================== var ====================================
@@ -21,8 +21,7 @@ async def get_route(
     start_lng: float,
     dest_lat: float,
     dest_lng: float,
-    preference: str,
-    avoid_polygons: Optional[List[Polygon]]     # DEBUG : return de create_circle_polygon bien de type Polygon?
+    avoid_polygons: Optional[List[Polygon]] = None
 ) -> Dict:
     """
     Fetches a route from OpenRouteService between two coordinates (start + dest)
@@ -41,10 +40,17 @@ async def get_route(
             [start_lng, start_lat],
             [dest_lng, dest_lat],
         ],
-        "preference" : preference,
+        "preference" : "recommended",
         "instructions": False,
         "language": "fr",
     }
+
+    # if we are in route 2, then add the list of polygons (multipolygonated) to the ORS body request
+    if avoid_polygons:
+        multi_polygons = MultiPolygon(avoid_polygons)
+        body["options"] = {
+            "avoid_polygons": mapping(multi_polygons)
+        }
 
     #API call to ORS
     async with httpx.AsyncClient(timeout=30) as client:

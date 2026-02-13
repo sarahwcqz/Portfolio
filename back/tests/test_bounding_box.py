@@ -1,5 +1,5 @@
 import unittest
-from app.services.inject_reports_route import calculate_bounding_box
+from back.app.services.create_danger_zones import calculate_bounding_box
 
 class TestCalculateBoundingBox(unittest.TestCase):
     def test_basic_case(self):

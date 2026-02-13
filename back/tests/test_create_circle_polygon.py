@@ -1,6 +1,6 @@
 import unittest
 from shapely.geometry import Point
-from app.services.inject_reports_route import create_circle_polygon
+from back.app.services.create_danger_zones import create_circle_polygon
 
 class TestCreateCirclePolygon(unittest.TestCase):
     def test_output_type(self):

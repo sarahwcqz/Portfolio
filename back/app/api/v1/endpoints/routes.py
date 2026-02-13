@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Body, HTTPException
 from app.models.route import RouteRequest
-from app.services import get_route
+from app.services.get_route import get_route
+from app.services.create_danger_zones import create_danger_zones
 
 
 #===================================================== var ==================================================
@@ -19,12 +20,18 @@ async def calculate_route(payload: RouteRequest = Body(...)):
         - route2 : safest (avoids reports)
     """
     try:
-        route1 = await get_route(
+        danger_zones = await create_danger_zones(
             start_lat=payload.start_lat,
             start_lng=payload.start_lng,
             dest_lat=payload.dest_lat,
             dest_lng=payload.dest_lng,
-            preference="shortest",
+        )
+
+        route1 = await get_route(
+            start_lat=payload.start_lat,
+            start_lng=payload.start_lng,
+            dest_lat=payload.dest_lat,
+            dest_lng=payload.dest_lng
         )
 
         route2 = await get_route(
@@ -32,7 +39,7 @@ async def calculate_route(payload: RouteRequest = Body(...)):
             start_lng=payload.start_lng,
             dest_lat=payload.dest_lat,
             dest_lng=payload.dest_lng,
-            preference="avoid",
+            avoid_polygons=danger_zones
         )
 
         return {
@@ -45,7 +52,7 @@ async def calculate_route(payload: RouteRequest = Body(...)):
                     "coordinates": route1["coordinates"],
                     "duration": route1["duration"],
                     "distance": route1["distance"],
-                    "colors": "blue"
+                    "color": "blue"
                 },
                 #route 2 : avoiding reports
                 {
@@ -54,7 +61,7 @@ async def calculate_route(payload: RouteRequest = Body(...)):
                     "coordinates": route2["coordinates"],
                     "duration": route2["duration"],
                     "distance": route2["distance"],
-                    "colors": "green"
+                    "color": "green"
                 }
             ]
 
