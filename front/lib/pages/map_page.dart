@@ -56,6 +56,10 @@ class _MapPageState extends State<MapPage> {
   LatLng? _destinationPoint;
   String _destinationAddress = "Choisir la destination";
 
+  //select route
+  List<Map<String, dynamic>> _availableRoutes = [];
+  int? _selectedRouteIndex;
+
   // --------------------------- INIT ------------------------------
   // when starting, calls determinePosition function
   @override
@@ -145,7 +149,9 @@ class _MapPageState extends State<MapPage> {
     } catch (e) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Impossible d'obtenir la position exacte: $e")),
+          SnackBar(
+            content: Text("Impossible d'obtenir la position exacte: $e"),
+          ),
         );
       });
     }
@@ -166,12 +172,13 @@ class _MapPageState extends State<MapPage> {
     if (result != null) {
       setState(() {
         if (isStart) {
-          _startPoint = result.latLng;                  // <- to send to back for GraphH routing
+          _startPoint = result.latLng; // <- to send to back for GraphH routing
           _startAddress = result.isCurrentPosition
               ? "Ma position actuelle"
               : result.address;
         } else {
-          _destinationPoint = result.latLng;            // <- to send to back for GraphH routing
+          _destinationPoint =
+              result.latLng; // <- to send to back for GraphH routing
           _destinationAddress = result.isCurrentPosition
               ? "Ma position actuelle"
               : result.address;
@@ -202,23 +209,63 @@ class _MapPageState extends State<MapPage> {
       destLng: _destinationPoint!.longitude,
     );
 
-    final response = await http.post(
-      Uri.parse('http://127.0.0.1:8000/api/v1/routes'),      // <---- will change when testing app
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(request.toJson()),
-    );
-
-    // succes / error handling
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      // TO DO: traiter la réponse (itinéraire, polyline, instructions)
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Itinéraire reçu du backend")), // DEBUG
+    try {
+      final response = await http.post(
+        Uri.parse(
+          'http://10.0.2.2:8000/api/v1/routes/',
+        ), // <---- will change when testing app
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(request.toJson()),
       );
-    } else {
+
+      // succes / error handling
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        setState(() {
+          _availableRoutes = List<Map<String, dynamic>>.from(
+            (data['routes'] as List).map(
+              (route) => {
+                'route_id': route['route_id'],
+                'name': route['name'],
+                'description': route['description'] ?? '',
+                'distance': route['distance'],
+                'duration': route['duration'],
+                'color': route['color'],
+                'points': (route['coordinates'] as List)
+                    .map((point) => LatLng(point['lat'], point['lng']))
+                    .toList(),
+              },
+            ),
+          );
+          _selectedRouteIndex = null; // Aucune route sélectionnée par défaut
+        });
+        // TO DO: traiter la réponse (itinéraire, polyline, instructions)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Itinéraire reçu du backend")), // DEBUG
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Erreur serveur ${response.statusCode}")),
+        );
+      }
+    } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text("Erreur serveur")));
+      ).showSnackBar(SnackBar(content: Text("Erreur de connexion: $e")));
+    }
+  }
+
+  Color _getColorFromString(String colorName) {
+    switch (colorName.toLowerCase()) {
+      case 'blue':
+        return Colors.blue;
+      case 'green':
+        return Colors.green;
+      case 'red':
+        return Colors.red;
+      default:
+        return Colors.blue;
     }
   }
 
@@ -245,6 +292,23 @@ class _MapPageState extends State<MapPage> {
                 // identity of project for api call to OSM
                 userAgentPackageName: 'com.example.front',
               ),
+
+              PolylineLayer(
+                polylines: _availableRoutes.asMap().entries.map((entry) {
+                  int index = entry.key;
+                  var route = entry.value;
+                  bool isSelected = _selectedRouteIndex == index;
+
+                  return Polyline(
+                    points: route['points'],
+                    strokeWidth: isSelected ? 6.0 : 4.0,
+                    color: _getColorFromString(
+                      route['color'],
+                    ).withOpacity(isSelected ? 1.0 : 0.6),
+                  );
+                }).toList(),
+              ),
+
               // ..............................markers.........................
               MarkerLayer(
                 markers: [
@@ -337,28 +401,185 @@ class _MapPageState extends State<MapPage> {
               ],
             ),
           ),
-        ],
-      ),
 
-      // ================================= floating buttons ===========================================
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          // .............. recenter button ..........................
-          FloatingActionButton(
-            heroTag: "gps",
-            onPressed: _determinePosition,
-            child: const Icon(Icons.gps_fixed),
-          ),
-          const SizedBox(height: 10),
-          // .............. let's go button ...........................
-          FloatingActionButton(
-            heroTag: "route",
-            onPressed: _sendRouteRequest,
-            child: const Icon(Icons.directions),
-          ),
-        ],
-      ),
-    );
-  }
-}
+          // =================================== route selection cards ======================================
+          // =================================== route selection cards + buttons ======================================
+          if (_availableRoutes.isNotEmpty)
+            Positioned(
+              bottom: 16,
+              left: 16,
+              right: 16,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // ========== CARTES DE SÉLECTION (À GAUCHE) ==========
+                  Expanded(
+                    child: Column(
+                      children: _availableRoutes.asMap().entries.map((entry) {
+                        int index = entry.key;
+                        var route = entry.value;
+                        bool isSelected = _selectedRouteIndex == index;
+
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedRouteIndex = index;
+                            });
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isSelected ? Colors.blue : Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isSelected
+                                    ? Colors.blue
+                                    : Colors.grey.shade300,
+                                width: 2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Nom de la route
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 4,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: _getColorFromString(
+                                          route['color'],
+                                        ),
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        route['name'],
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                          color: isSelected
+                                              ? Colors.white
+                                              : Colors.black,
+                                        ),
+                                      ),
+                                    ),
+                                    Icon(
+                                      isSelected
+                                          ? Icons.check_circle
+                                          : Icons.circle_outlined,
+                                      size: 20,
+                                      color: isSelected
+                                          ? Colors.white
+                                          : Colors.grey,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                // Description
+                                if (route['description'].toString().isNotEmpty)
+                                  Text(
+                                    route['description'],
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: isSelected
+                                          ? Colors.white70
+                                          : Colors.grey,
+                                    ),
+                                  ),
+                                const SizedBox(height: 4),
+                                // Distance et durée
+                                Row(
+                                  children: [
+                                    Text(
+                                      '${(route['distance'] / 1000).toStringAsFixed(1)} km',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                        color: isSelected
+                                            ? Colors.white
+                                            : Colors.black,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '${(route['duration'] / 60).toStringAsFixed(0)} min',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: isSelected
+                                            ? Colors.white70
+                                            : Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  // ========== BOUTONS (À DROITE) ==========
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Bouton GPS
+                      FloatingActionButton(
+                        heroTag: "gps",
+                        onPressed: _determinePosition,
+                        child: const Icon(Icons.gps_fixed),
+                      ),
+                      const SizedBox(height: 10),
+                      // Bouton Itinéraire
+                      FloatingActionButton(
+                        heroTag: "route",
+                        onPressed: _sendRouteRequest,
+                        child: const Icon(Icons.directions),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            )
+          else
+            // ========== BOUTONS SEULS (SI PAS DE ROUTES) ==========
+            Positioned(
+              bottom: 16,
+              right: 16,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FloatingActionButton(
+                    heroTag: "gps",
+                    onPressed: _determinePosition,
+                    child: const Icon(Icons.gps_fixed),
+                  ),
+                  const SizedBox(height: 10),
+                  FloatingActionButton(
+                    heroTag: "route",
+                    onPressed: _sendRouteRequest,
+                    child: const Icon(Icons.directions),
+                  ), // ← Ferme FloatingActionButton route
+                ], // ← Ferme children de Column
+              ), // ← Ferme child (Column)
+            ), // ← Ferme Positioned (else)
+        ], // ← Ferme children de Stack
+      ), // ← Ferme body (Stack)
+    ); // ← Ferme Scaffold
+  } // ← Ferme Widget build()
+} // ← Ferme class _MapPageState
