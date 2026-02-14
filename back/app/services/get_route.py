@@ -21,7 +21,9 @@ async def get_route(
     start_lng: float,
     dest_lat: float,
     dest_lng: float,
-    avoid_polygons: Optional[List[Polygon]] = None
+    preference: str,
+    avoid_polygons: Optional[List[Polygon]] = None,
+    with_instructions: bool = False
 ) -> Dict:
     """
     Fetches a route from OpenRouteService between two coordinates (start + dest)
@@ -40,8 +42,8 @@ async def get_route(
             [start_lng, start_lat],
             [dest_lng, dest_lat],
         ],
-        "preference" : "recommended",
-        "instructions": False,
+        "preference": preference,
+        "instructions": with_instructions,
         "language": "fr",
     }
 
@@ -63,8 +65,23 @@ async def get_route(
     decoded_coord = polyline.decode(route_info['geometry'])
     coordinates = [{"lat": lat, "lng": long} for lat, long in decoded_coord]
 
-    return {
-        "coordinates": coordinates,
-        "duration": route_info['summary']['duration'],
-        "distance": route_info['summary']['distance'],
-    }
+    result = {
+    "coordinates": coordinates,
+    "duration": route_info['summary']['duration'],
+    "distance": route_info['summary']['distance'],
+}
+
+# AJOUT : Instructions si demandées
+    if with_instructions:
+        steps = route_info['segments'][0]['steps']
+        result["instructions"] = [
+            {
+                "step": idx + 1,
+                "instruction": step['instruction'],
+                "distance": step['distance'],
+                "duration": step['duration'],
+            }
+            for idx, step in enumerate(steps)
+        ]
+
+    return result

@@ -7,6 +7,8 @@ import 'package:geolocator/geolocator.dart';
 import 'dart:convert';
 // http requests
 import 'package:http/http.dart' as http;
+// Timer pour le suivi GPS
+import 'dart:async';
 
 // others pages
 import 'address_search_page.dart';
@@ -60,12 +62,224 @@ class _MapPageState extends State<MapPage> {
   List<Map<String, dynamic>> _availableRoutes = [];
   int? _selectedRouteIndex;
 
+  // ✅ NOUVELLES VARIABLES : Navigation GPS
+  List<dynamic> _currentInstructions = [];
+  int _currentStepIndex = 0;
+  Timer? _gpsTimer;
+  bool _isNavigating = false;
+  double _distanceToNextStep = 0.0;
+
+  // ======================================================= startNavigation =================================================
+  // Récupère les instructions de guidage pour la route sélectionnée
+
+  Future<void> _startNavigation() async {
+    if (_selectedRouteIndex == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Veuillez sélectionner un itinéraire")),
+      );
+      return;
+    }
+
+    // Récupère les infos de la route sélectionnée
+    final selectedRoute = _availableRoutes[_selectedRouteIndex!];
+    final routeId = selectedRoute['route_id'];
+
+    // Affiche un loader
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            SizedBox(width: 16),
+            Text("Chargement du guidage..."),
+          ],
+        ),
+        duration: Duration(seconds: 30),
+      ),
+    );
+
+    try {
+      // ========== REQUÊTE POUR OBTENIR LES INSTRUCTIONS ==========
+      final request = RouteRequest(
+        startLat: _startPoint!.latitude,
+        startLng: _startPoint!.longitude,
+        destLat: _destinationPoint!.latitude,
+        destLng: _destinationPoint!.longitude,
+      );
+
+      final response = await http.post(
+        Uri.parse('http://10.0.2.2:8000/api/v1/routes/$routeId/instructions'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(request.toJson()),
+      );
+
+      // Ferme le loader
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).clearSnackBars();
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        // ACTIVE LA NAVIGATION GPS
+        setState(() {
+          _currentInstructions = data['instructions'];
+          _currentStepIndex = 0;
+          _isNavigating = true;
+        });
+
+        // DÉMARRE LE SUIVI GPS
+        _startGPSTracking();
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Navigation démarrée")));
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Erreur ${response.statusCode}")),
+        );
+      }
+      if (!mounted) return;
+    } catch (e) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Erreur : $e")));
+    }
+  }
+
+  // ======================================================= startGPSTracking =================================================
+  // Suit la position GPS toutes les 2 secondes
+
+  void _startGPSTracking() {
+    _gpsTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
+      try {
+        // Récupère la position actuelle
+        Position position = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+          ),
+        );
+
+        setState(() {
+          _currentPosition = LatLng(position.latitude, position.longitude);
+        });
+
+        // Recentre la carte sur ta position
+        _mapController.move(_currentPosition, 17.0);
+
+        // Calcule la distance à la prochaine instruction
+        _updateDistanceToNextStep(position);
+
+        // Vérifie si on a atteint l'étape
+        _checkIfStepReached();
+      } catch (e) {
+        debugPrint("Erreur GPS: $e");
+      }
+    });
+  }
+
+  // ======================================================= updateDistanceToNextStep =================================================
+  // Calcule la distance jusqu'à la prochaine instruction
+
+  void _updateDistanceToNextStep(Position currentPosition) {
+    if (_currentStepIndex >= _currentInstructions.length) {
+      // Navigation terminée
+      _stopNavigation();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Vous êtes arrivé à destination !"),
+          backgroundColor: Colors.green,
+        ),
+      );
+      return;
+    }
+
+    // Récupère les coordonnées de la route sélectionnée
+    final routePoints =
+        _availableRoutes[_selectedRouteIndex!]['points'] as List<LatLng>;
+
+    // Trouve le point le plus proche correspondant à l'instruction actuelle
+    // (Simplifié : on prend un point vers le milieu de la route pour cette étape)
+    int pointIndex =
+        (_currentStepIndex * routePoints.length / _currentInstructions.length)
+            .floor();
+    if (pointIndex >= routePoints.length) pointIndex = routePoints.length - 1;
+
+    final targetPoint = routePoints[pointIndex];
+
+    // Calcul de distance (en mètres)
+    double distance = Geolocator.distanceBetween(
+      currentPosition.latitude,
+      currentPosition.longitude,
+      targetPoint.latitude,
+      targetPoint.longitude,
+    );
+
+    setState(() {
+      _distanceToNextStep = distance;
+    });
+  }
+
+  // ======================================================= checkIfStepReached =================================================
+  // Vérifie si on a atteint l'étape actuelle
+
+  void _checkIfStepReached() {
+    // Si on est à moins de 30m de la prochaine étape
+    if (_distanceToNextStep < 30) {
+      setState(() {
+        _currentStepIndex++;
+      });
+
+      // Message de confirmation
+      if (_currentStepIndex < _currentInstructions.length) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Étape $_currentStepIndex/${_currentInstructions.length}",
+            ),
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      }
+    }
+  }
+
+  // ======================================================= stopNavigation =================================================
+  // Arrête la navigation GPS
+
+  void _stopNavigation() {
+    _gpsTimer?.cancel();
+    setState(() {
+      _isNavigating = false;
+      _currentStepIndex = 0;
+      _currentInstructions = [];
+      _distanceToNextStep = 0.0;
+    });
+  }
+
   // --------------------------- INIT ------------------------------
   // when starting, calls determinePosition function
   @override
   void initState() {
     super.initState();
     _determinePosition();
+  }
+
+  @override
+  void dispose() {
+    _gpsTimer?.cancel(); // Important : nettoie le timer
+    super.dispose();
   }
 
   // =============================================================================================================================
@@ -172,19 +386,17 @@ class _MapPageState extends State<MapPage> {
     if (result != null) {
       setState(() {
         if (isStart) {
-          _startPoint = result.latLng; // <- to send to back for GraphH routing
+          _startPoint = result.latLng;
           _startAddress = result.isCurrentPosition
               ? "Ma position actuelle"
               : result.address;
         } else {
-          _destinationPoint =
-              result.latLng; // <- to send to back for GraphH routing
+          _destinationPoint = result.latLng;
           _destinationAddress = result.isCurrentPosition
               ? "Ma position actuelle"
               : result.address;
         }
       });
-      // Centers on result <------------------------ change it later?
       _mapController.move(result.latLng, 15.0);
     }
   }
@@ -211,9 +423,7 @@ class _MapPageState extends State<MapPage> {
 
     try {
       final response = await http.post(
-        Uri.parse(
-          'http://10.0.2.2:8000/api/v1/routes/',
-        ), // <---- will change when testing app
+        Uri.parse('http://10.0.2.2:8000/api/v1/routes/'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(request.toJson()),
       );
@@ -238,18 +448,22 @@ class _MapPageState extends State<MapPage> {
               },
             ),
           );
-          _selectedRouteIndex = null; // Aucune route sélectionnée par défaut
+          _selectedRouteIndex = null;
         });
-        // TO DO: traiter la réponse (itinéraire, polyline, instructions)
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Itinéraire reçu du backend")), // DEBUG
+          SnackBar(
+            content: Text("${_availableRoutes.length} itinéraires trouvés !"),
+          ),
         );
       } else {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Erreur serveur ${response.statusCode}")),
         );
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text("Erreur de connexion: $e")));
@@ -280,7 +494,6 @@ class _MapPageState extends State<MapPage> {
         children: [
           // ---------------------------------------- FLUTTER MAP ----------------------------------
           FlutterMap(
-            //binding controller
             mapController: _mapController,
             options: MapOptions(
               initialCenter: _currentPosition,
@@ -289,7 +502,6 @@ class _MapPageState extends State<MapPage> {
             children: [
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                // identity of project for api call to OSM
                 userAgentPackageName: 'com.example.front',
               ),
 
@@ -304,12 +516,12 @@ class _MapPageState extends State<MapPage> {
                     strokeWidth: isSelected ? 6.0 : 4.0,
                     color: _getColorFromString(
                       route['color'],
-                    ).withOpacity(isSelected ? 1.0 : 0.6),
+                    ).withValues(alpha: isSelected ? 1.0 : 0.6),
                   );
                 }).toList(),
               ),
 
-              // ..............................markers.........................
+              // markers
               MarkerLayer(
                 markers: [
                   // start
@@ -338,7 +550,7 @@ class _MapPageState extends State<MapPage> {
                       ),
                     ),
 
-                  // current position(user on the map)
+                  // current position
                   Marker(
                     point: _currentPosition,
                     width: 60,
@@ -355,231 +567,289 @@ class _MapPageState extends State<MapPage> {
           ),
 
           // =================================== start + dest fields ======================================
-          Positioned(
-            top: 50,
-            left: 16,
-            right: 16,
-            child: Column(
-              children: [
-                // ------------ start point ------------------
-                GestureDetector(
-                  onTap: () => _openAddressSearch(isStart: true),
-                  child: Material(
-                    elevation: 4,
-                    borderRadius: BorderRadius.circular(8),
-                    child: TextFormField(
-                      enabled: false,
-                      decoration: InputDecoration(
-                        hintText: _startAddress,
-                        prefixIcon: const Icon(Icons.trip_origin),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                // ------------- destination point ------------
-                GestureDetector(
-                  onTap: () => _openAddressSearch(isStart: false),
-                  child: Material(
-                    elevation: 4,
-                    borderRadius: BorderRadius.circular(8),
-                    child: TextFormField(
-                      enabled: false,
-                      decoration: InputDecoration(
-                        hintText: _destinationAddress,
-                        prefixIcon: const Icon(Icons.flag),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // =================================== route selection cards ======================================
-          // =================================== route selection cards + buttons ======================================
-          if (_availableRoutes.isNotEmpty)
+          if (!_isNavigating) // Cache les champs pendant la navigation
             Positioned(
-              bottom: 16,
+              top: 50,
               left: 16,
               right: 16,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              child: Column(
                 children: [
-                  // ========== CARTES DE SÉLECTION (À GAUCHE) ==========
-                  Expanded(
-                    child: Column(
-                      children: _availableRoutes.asMap().entries.map((entry) {
-                        int index = entry.key;
-                        var route = entry.value;
-                        bool isSelected = _selectedRouteIndex == index;
-
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _selectedRouteIndex = index;
-                            });
-                          },
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: isSelected ? Colors.blue : Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isSelected
-                                    ? Colors.blue
-                                    : Colors.grey.shade300,
-                                width: 2,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Nom de la route
-                                Row(
-                                  children: [
-                                    Container(
-                                      width: 4,
-                                      height: 40,
-                                      decoration: BoxDecoration(
-                                        color: _getColorFromString(
-                                          route['color'],
-                                        ),
-                                        borderRadius: BorderRadius.circular(2),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        route['name'],
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                          color: isSelected
-                                              ? Colors.white
-                                              : Colors.black,
-                                        ),
-                                      ),
-                                    ),
-                                    Icon(
-                                      isSelected
-                                          ? Icons.check_circle
-                                          : Icons.circle_outlined,
-                                      size: 20,
-                                      color: isSelected
-                                          ? Colors.white
-                                          : Colors.grey,
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                // Description
-                                if (route['description'].toString().isNotEmpty)
-                                  Text(
-                                    route['description'],
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: isSelected
-                                          ? Colors.white70
-                                          : Colors.grey,
-                                    ),
-                                  ),
-                                const SizedBox(height: 4),
-                                // Distance et durée
-                                Row(
-                                  children: [
-                                    Text(
-                                      '${(route['distance'] / 1000).toStringAsFixed(1)} km',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                        color: isSelected
-                                            ? Colors.white
-                                            : Colors.black,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      '${(route['duration'] / 60).toStringAsFixed(0)} min',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: isSelected
-                                            ? Colors.white70
-                                            : Colors.grey,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
+                  // start point
+                  GestureDetector(
+                    onTap: () => _openAddressSearch(isStart: true),
+                    child: Material(
+                      elevation: 4,
+                      borderRadius: BorderRadius.circular(8),
+                      child: TextFormField(
+                        enabled: false,
+                        decoration: InputDecoration(
+                          hintText: _startAddress,
+                          prefixIcon: const Icon(Icons.trip_origin),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                        );
-                      }).toList(),
+                        ),
+                      ),
                     ),
                   ),
-
-                  const SizedBox(width: 12),
-
-                  // ========== BOUTONS (À DROITE) ==========
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Bouton GPS
-                      FloatingActionButton(
-                        heroTag: "gps",
-                        onPressed: _determinePosition,
-                        child: const Icon(Icons.gps_fixed),
+                  const SizedBox(height: 10),
+                  // destination point
+                  GestureDetector(
+                    onTap: () => _openAddressSearch(isStart: false),
+                    child: Material(
+                      elevation: 4,
+                      borderRadius: BorderRadius.circular(8),
+                      child: TextFormField(
+                        enabled: false,
+                        decoration: InputDecoration(
+                          hintText: _destinationAddress,
+                          prefixIcon: const Icon(Icons.flag),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 10),
-                      // Bouton Itinéraire
-                      FloatingActionButton(
-                        heroTag: "route",
-                        onPressed: _sendRouteRequest,
-                        child: const Icon(Icons.directions),
-                      ),
-                    ],
+                    ),
                   ),
                 ],
               ),
-            )
-          else
-            // ========== BOUTONS SEULS (SI PAS DE ROUTES) ==========
+            ),
+
+          //  =================================== BANNIÈRE DE NAVIGATION ======================================
+          if (_isNavigating && _currentInstructions.isNotEmpty)
+            Positioned(
+              top: 50,
+              left: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.blue.shade700, Colors.blue.shade500],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Distance
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.straighten,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _distanceToNextStep < 1000
+                              ? "Dans ${_distanceToNextStep.toInt()} m"
+                              : "Dans ${(_distanceToNextStep / 1000).toStringAsFixed(1)} km",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    // Instruction actuelle
+                    Text(
+                      _currentStepIndex < _currentInstructions.length
+                          ? _currentInstructions[_currentStepIndex]['instruction']
+                          : "Vous êtes arrivé !",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Progression
+                    Text(
+                      "Étape ${_currentStepIndex + 1}/${_currentInstructions.length}",
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // =================================== CARTES DE SÉLECTION ======================================
+          if (_availableRoutes.isNotEmpty && !_isNavigating)
             Positioned(
               bottom: 16,
-              right: 16,
+              left: 16,
+              right: 80,
               child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+                children: _availableRoutes.asMap().entries.map((entry) {
+                  int index = entry.key;
+                  var route = entry.value;
+                  bool isSelected = _selectedRouteIndex == index;
+
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedRouteIndex = index;
+                      });
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isSelected ? Colors.blue : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected
+                              ? Colors.blue
+                              : Colors.grey.shade300,
+                          width: 2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 4,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: _getColorFromString(route['color']),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  route['name'],
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : Colors.black,
+                                  ),
+                                ),
+                              ),
+                              Icon(
+                                isSelected
+                                    ? Icons.check_circle
+                                    : Icons.circle_outlined,
+                                size: 20,
+                                color: isSelected ? Colors.white : Colors.grey,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          if (route['description'].toString().isNotEmpty)
+                            Text(
+                              route['description'],
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: isSelected
+                                    ? Colors.white70
+                                    : Colors.grey,
+                              ),
+                            ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Text(
+                                '${(route['distance'] / 1000).toStringAsFixed(1)} km',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : Colors.black,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${(route['duration'] / 60).toStringAsFixed(0)} min',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isSelected
+                                      ? Colors.white70
+                                      : Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+
+          // =================================== BOUTONS GPS + CALCULER ======================================
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Bouton GPS (si pas en navigation)
+                if (!_isNavigating)
                   FloatingActionButton(
                     heroTag: "gps",
                     onPressed: _determinePosition,
                     child: const Icon(Icons.gps_fixed),
                   ),
-                  const SizedBox(height: 10),
+
+                if (!_isNavigating) const SizedBox(height: 10),
+
+                //  Bouton ARRÊTER (si en navigation)
+                if (_isNavigating)
+                  FloatingActionButton.extended(
+                    heroTag: "stop_navigation",
+                    onPressed: _stopNavigation,
+                    backgroundColor: Colors.red,
+                    icon: const Icon(Icons.stop),
+                    label: const Text("Arrêter"),
+                  )
+                // Bouton Démarrer (si route sélectionnée)
+                else if (_selectedRouteIndex != null)
+                  FloatingActionButton.extended(
+                    heroTag: "start_navigation",
+                    onPressed: _startNavigation,
+                    backgroundColor: Colors.green,
+                    icon: const Icon(Icons.navigation),
+                    label: const Text("Démarrer"),
+                  )
+                // Bouton Calculer (si départ + destination définis)
+                else if (_startPoint != null && _destinationPoint != null)
                   FloatingActionButton(
                     heroTag: "route",
                     onPressed: _sendRouteRequest,
                     child: const Icon(Icons.directions),
-                  ), // ← Ferme FloatingActionButton route
-                ], // ← Ferme children de Column
-              ), // ← Ferme child (Column)
-            ), // ← Ferme Positioned (else)
-        ], // ← Ferme children de Stack
+                  ),
+              ],
+            ),
+          ),
+        ], // ← Ferme children du Stack
       ), // ← Ferme body (Stack)
     ); // ← Ferme Scaffold
-  } // ← Ferme Widget build()
-} // ← Ferme class _MapPageState
+  } // ← Ferme build()
+} // ← Ferme _MapPageState
