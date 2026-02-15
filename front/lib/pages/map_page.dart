@@ -810,39 +810,39 @@ class _MapPageState extends State<MapPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Bouton GPS (si pas en navigation)
                 if (!_isNavigating)
                   FloatingActionButton(
                     heroTag: "gps",
                     onPressed: _determinePosition,
+                    backgroundColor: const Color(0xFF5E35B1), // Violet
+                    foregroundColor: Colors.white,
                     child: const Icon(Icons.gps_fixed),
                   ),
 
                 if (!_isNavigating) const SizedBox(height: 10),
 
-                //  Bouton ARRÊTER (si en navigation)
                 if (_isNavigating)
-                  FloatingActionButton.extended(
+                  FloatingActionButton(
                     heroTag: "stop_navigation",
                     onPressed: _stopNavigation,
                     backgroundColor: Colors.red,
-                    icon: const Icon(Icons.stop),
-                    label: const Text("Arrêter"),
+                    foregroundColor: Colors.white,
+                    child: const Icon(Icons.stop),
                   )
-                // Bouton Démarrer (si route sélectionnée)
                 else if (_selectedRouteIndex != null)
-                  FloatingActionButton.extended(
+                  FloatingActionButton(
                     heroTag: "start_navigation",
                     onPressed: _startNavigation,
                     backgroundColor: Colors.green,
-                    icon: const Icon(Icons.navigation),
-                    label: const Text("Démarrer"),
+                    foregroundColor: Colors.white,
+                    child: const Icon(Icons.navigation),
                   )
-                // Bouton Calculer (si départ + destination définis)
                 else if (_startPoint != null && _destinationPoint != null)
                   FloatingActionButton(
                     heroTag: "route",
                     onPressed: _sendRouteRequest,
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
                     child: const Icon(Icons.directions),
                   ),
               ],
