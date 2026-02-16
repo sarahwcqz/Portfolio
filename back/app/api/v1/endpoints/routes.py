@@ -75,6 +75,7 @@ async def calculate_route(payload: RouteRequest = Body(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
+
 # ===================================================== ENDPOINT INSTRUCTIONS =================================================
 
 
@@ -84,13 +85,13 @@ async def get_route_instructions(
     payload: RouteRequest = Body(...)
 ):
     """
-    Récupère les instructions détaillées pour la route sélectionnée
+    Gets instructions for selected route
     """
     try:
-        # Détermine la préférence selon le route_id
+        # Set preference depending on route_id
         preference = "shortest" if route_id == "shortest" else "recommended"
         
-        # Récupère les zones dangereuses (seulement pour route avoid)
+        # gets reports if route2
         danger_zones = []
         if route_id == "avoid":
             danger_zones = await create_danger_zones(
@@ -100,7 +101,7 @@ async def get_route_instructions(
                 dest_lng=payload.dest_lng,
             )
         
-        # Appel avec instructions=True
+        # get route with instructions=True
         route = await get_route(
             start_lat=payload.start_lat,
             start_lng=payload.start_lng,
@@ -108,7 +109,7 @@ async def get_route_instructions(
             dest_lng=payload.dest_lng,
             preference=preference,
             avoid_polygons=danger_zones if route_id == "avoid" else None,
-            with_instructions=True  # ✅ IMPORTANT
+            with_instructions=True
         )
         
         return {
@@ -117,5 +118,5 @@ async def get_route_instructions(
         }
         
     except Exception as e:
-        print(f"❌ Erreur dans get_route_instructions: {e}")
+        print(f"Erreur dans get_route_instructions: {e}")
         raise HTTPException(status_code=500, detail=str(e))

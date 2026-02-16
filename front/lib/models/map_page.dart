@@ -11,7 +11,8 @@ import 'package:http/http.dart' as http;
 import 'dart:async';
 
 // others pages
-import 'address_search_page.dart';
+import '../views/address_search_page.dart';
+import '../models/picked_location_model.dart';
 
 //============================================================================================================================
 //========================================================== CLASSES =========================================================
