@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:flutter_map/flutter_map.dart';
 import '../models/route_request_model.dart';
 import '../models/route_model.dart';
 import '../models/navigation_state_model.dart';
@@ -20,6 +21,8 @@ class NavigationController extends ChangeNotifier {
   int? _selectedRouteIndex;
   NavigationState _navigationState = NavigationState.initial();
   Timer? _gpsTimer;
+  StreamSubscription<double>? _compassSubscription;
+  MapController? _mapController;
 
   // Callbacks pour la navigation
   VoidCallback? _onStepReached;
@@ -34,6 +37,10 @@ class NavigationController extends ChangeNotifier {
   List<RouteModel> get availableRoutes => _availableRoutes;
   int? get selectedRouteIndex => _selectedRouteIndex;
   NavigationState get navigationState => _navigationState;
+
+  void setMapController(MapController controller) {
+    _mapController = controller;
+  }
 
   // Setters
   void setStartPoint(LatLng point, String address) {
@@ -102,9 +109,49 @@ class NavigationController extends ChangeNotifier {
       instructions: instructions,
       currentStepIndex: 0,
       distanceToNextStep: 0.0,
+      currentHeading: 0.0,
     );
 
+    _startCompassTracking();
+
     notifyListeners();
+  }
+
+  void _startCompassTracking() {
+    final compassStream = _locationService.getCompassStream();
+    if (compassStream == null) {
+      debugPrint("⚠️ Boussole non disponible sur cet appareil");
+      return;
+    }
+
+    _compassSubscription = compassStream.listen((heading) {
+      _navigationState = _navigationState.copyWith(currentHeading: heading);
+
+      // Faire tourner la carte selon l'orientation
+      if (_mapController != null) {
+        _mapController!.moveAndRotate(
+          _mapController!.camera.center,
+          _mapController!.camera.zoom,
+          -heading,
+        );
+      }
+
+      notifyListeners();
+    });
+  }
+
+  void _stopCompassTracking() {
+    _compassSubscription?.cancel();
+    _compassSubscription = null;
+
+    // Remettre la carte à plat
+    if (_mapController != null) {
+      _mapController!.moveAndRotate(
+        _mapController!.camera.center,
+        _mapController!.camera.zoom,
+        0.0,
+      );
+    }
   }
 
   // Démarrer le suivi GPS
@@ -188,6 +235,7 @@ class NavigationController extends ChangeNotifier {
   // Arrêter la navigation
   void stopNavigation() {
     _gpsTimer?.cancel();
+    _stopCompassTracking();
     _navigationState = NavigationState.initial();
     _onStepReached = null;
     _onArrival = null;
@@ -211,6 +259,7 @@ class NavigationController extends ChangeNotifier {
   @override
   void dispose() {
     _gpsTimer?.cancel();
+    _compassSubscription?.cancel();
     super.dispose();
   }
 }

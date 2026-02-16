@@ -1,8 +1,11 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:flutter_compass/flutter_compass.dart';
 
 class LocationService {
-  
+  Stream<double>? getCompassStream() {
+    return FlutterCompass.events?.map((event) => event.heading ?? 0.0);
+  }
 
   // ------------------------------------ check permissions ------------------------------
   /// checks GPS permissions
@@ -29,8 +32,7 @@ class LocationService {
     return true;
   }
 
-
-// ------------------------------------------- get last know position ----------------------
+  // ------------------------------------------- get last know position ----------------------
   /// sets position to last know position (avoid big latency when clicking 'recenter')
   Future<LatLng?> getLastKnownPosition() async {
     Position? position = await Geolocator.getLastKnownPosition();
@@ -40,18 +42,16 @@ class LocationService {
     return null;
   }
 
-// ------------------------------------------ get current position --------------------------
-/// get real current position with high accuracy
+  // ------------------------------------------ get current position --------------------------
+  /// get real current position with high accuracy
   Future<LatLng> getCurrentPosition() async {
     Position position = await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-      ),
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
     );
     return LatLng(position.latitude, position.longitude);
   }
 
-// ------------------------------------------ ?????????? -------------------------------------
+  // ------------------------------------------ ?????????? -------------------------------------
   double calculateDistance(LatLng from, LatLng to) {
     return Geolocator.distanceBetween(
       from.latitude,

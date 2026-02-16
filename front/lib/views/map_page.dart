@@ -39,6 +39,8 @@ class _MapPageState extends State<MapPage> {
     final locationController = context.read<LocationController>();
     final navController = context.read<NavigationController>();
 
+    navController.setMapController(_mapController);
+
     navController.startGPSTracking(
       onPositionUpdate: (position) {
         if (navController.navigationState.isNavigating) {
@@ -71,7 +73,9 @@ class _MapPageState extends State<MapPage> {
     final navController = context.read<NavigationController>();
     try {
       await navController.calculateRoutes();
-      _showMessage("${navController.availableRoutes.length} itinéraires trouvés !");
+      _showMessage(
+        "${navController.availableRoutes.length} itinéraires trouvés !",
+      );
     } catch (e) {
       _showError(e.toString());
     }
@@ -108,7 +112,9 @@ class _MapPageState extends State<MapPage> {
     );
 
     if (result != null) {
-      final address = result.isCurrentPosition ? "Ma position actuelle" : result.address;
+      final address = result.isCurrentPosition
+          ? "Ma position actuelle"
+          : result.address;
       if (isStart) {
         navController.setStartPoint(result.latLng, address);
       } else {
@@ -120,7 +126,9 @@ class _MapPageState extends State<MapPage> {
 
   void _showMessage(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _showError(String message) {
@@ -142,7 +150,11 @@ class _MapPageState extends State<MapPage> {
       SnackBar(
         content: Row(
           children: [
-            const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
             const SizedBox(width: 16),
             Text(message),
           ],
@@ -166,7 +178,8 @@ class _MapPageState extends State<MapPage> {
                 MapAddressFields(
                   navController: navController,
                   onStartTap: () => _onAddressSearchPressed(isStart: true),
-                  onDestinationTap: () => _onAddressSearchPressed(isStart: false),
+                  onDestinationTap: () =>
+                      _onAddressSearchPressed(isStart: false),
                 ),
               if (navController.navigationState.isNavigating)
                 MapNavigationBanner(navState: navController.navigationState),
@@ -187,7 +200,10 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-  Widget _buildMap(LocationController locationController, NavigationController navController) {
+  Widget _buildMap(
+    LocationController locationController,
+    NavigationController navController,
+  ) {
     return FlutterMap(
       mapController: _mapController,
       options: MapOptions(
@@ -207,7 +223,9 @@ class _MapPageState extends State<MapPage> {
             return Polyline(
               points: route.points,
               strokeWidth: isSelected ? 6.0 : 4.0,
-              color: navController.getRouteColor(route.color).withValues(alpha: isSelected ? 1.0 : 0.6),
+              color: navController
+                  .getRouteColor(route.color)
+                  .withValues(alpha: isSelected ? 1.0 : 0.6),
             );
           }).toList(),
         ),
@@ -218,7 +236,11 @@ class _MapPageState extends State<MapPage> {
                 point: navController.startPoint!,
                 width: 60,
                 height: 60,
-                child: const Icon(Icons.location_pin, color: Colors.red, size: 40),
+                child: const Icon(
+                  Icons.location_pin,
+                  color: Colors.red,
+                  size: 40,
+                ),
               ),
             if (navController.destinationPoint != null)
               Marker(
@@ -231,7 +253,18 @@ class _MapPageState extends State<MapPage> {
               point: locationController.currentPosition,
               width: 60,
               height: 60,
-              child: const Icon(Icons.my_location, color: Colors.blue, size: 40),
+              child: Transform.rotate(
+                angle:
+                    navController.navigationState.currentHeading *
+                    (3.14159 / 180),
+                child: Icon(
+                  navController.navigationState.isNavigating
+                      ? Icons.navigation
+                      : Icons.my_location,
+                  color: Colors.blue,
+                  size: 40,
+                ),
+              ),
             ),
           ],
         ),
