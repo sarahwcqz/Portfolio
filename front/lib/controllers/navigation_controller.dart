@@ -136,16 +136,18 @@ class NavigationController extends ChangeNotifier {
   void _updateNavigation(LatLng currentPosition) {
     if (!_navigationState.isNavigating ||
         _selectedRouteIndex == null ||
-        _navigationState.currentStepIndex >= _navigationState.instructions.length) {
+        _navigationState.currentStepIndex >=
+            _navigationState.instructions.length) {
       return;
     }
 
     final routePoints = _availableRoutes[_selectedRouteIndex!].points;
 
-    int pointIndex = (_navigationState.currentStepIndex *
-            routePoints.length /
-            _navigationState.instructions.length)
-        .floor();
+    int pointIndex =
+        (_navigationState.currentStepIndex *
+                routePoints.length /
+                _navigationState.instructions.length)
+            .floor();
 
     if (pointIndex >= routePoints.length) {
       pointIndex = routePoints.length - 1;
@@ -160,7 +162,7 @@ class NavigationController extends ChangeNotifier {
 
     // Vérifier si on a atteint l'étape
     if (distance < 30 &&
-        _navigationState.currentStepIndex 
+        _navigationState.currentStepIndex <
             _navigationState.instructions.length - 1) {
       _navigationState = _navigationState.copyWith(
         currentStepIndex: _navigationState.currentStepIndex + 1,
