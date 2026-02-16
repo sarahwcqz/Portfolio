@@ -66,6 +66,9 @@ dependencies:
   #pour avoir des erreur precise sans catch e par exemple a la place des print
   logger: ^2.6.2
 
+  #orientation pour l utilisateur
+  flutter_compass: ^0.8.1 
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
