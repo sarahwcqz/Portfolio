@@ -120,7 +120,7 @@ class NavigationController extends ChangeNotifier {
   void _startCompassTracking() {
     final compassStream = _locationService.getCompassStream();
     if (compassStream == null) {
-      debugPrint("⚠️ Boussole non disponible sur cet appareil");
+      debugPrint("Boussole non disponible sur cet appareil");
       return;
     }
 

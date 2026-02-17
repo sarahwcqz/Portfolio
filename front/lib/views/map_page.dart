@@ -71,6 +71,7 @@ class _MapPageState extends State<MapPage> {
 
   Future<void> _onCalculateRoutesPressed() async {
     final navController = context.read<NavigationController>();
+    _showMessage("Calcul en cours...");
     try {
       await navController.calculateRoutes();
       _showMessage(
@@ -231,7 +232,8 @@ class _MapPageState extends State<MapPage> {
         ),
         MarkerLayer(
           markers: [
-            if (navController.startPoint != null)
+            if (navController.startPoint != null &&
+                !navController.navigationState.isNavigating)
               Marker(
                 point: navController.startPoint!,
                 width: 60,
