@@ -31,7 +31,6 @@ class _MapPageState extends State<MapPage> {
 
   @override
   void dispose() {
-    context.read<NavigationController>().dispose();
     super.dispose();
   }
 
@@ -46,6 +45,7 @@ class _MapPageState extends State<MapPage> {
         if (navController.navigationState.isNavigating) {
           _mapController.move(position, 17.0);
         }
+        if (mounted) setState(() {});
       },
       onError: (message) => _showError(message),
     );
@@ -71,6 +71,7 @@ class _MapPageState extends State<MapPage> {
 
   Future<void> _onCalculateRoutesPressed() async {
     final navController = context.read<NavigationController>();
+    _showMessage("Calcul en cours...");
     try {
       await navController.calculateRoutes();
       _showMessage(
@@ -83,14 +84,18 @@ class _MapPageState extends State<MapPage> {
 
   Future<void> _onStartNavigationPressed() async {
     final navController = context.read<NavigationController>();
+    final locationController = context.read<LocationController>();
+
     _showLoader("Chargement du guidage...");
 
     try {
       await navController.startNavigation(
         onStepReached: () => _showMessage("Étape suivante"),
         onArrival: () => _showSuccess("Vous êtes arrivé !"),
+        onRecalculating: () => _showMessage("Recalcul de l'itinéraire..."),
       );
       _hideLoader();
+      _mapController.move(locationController.currentPosition, 17.0);
       _showMessage("Navigation démarrée");
     } catch (e) {
       _hideLoader();
@@ -231,7 +236,8 @@ class _MapPageState extends State<MapPage> {
         ),
         MarkerLayer(
           markers: [
-            if (navController.startPoint != null)
+            if (navController.startPoint != null &&
+                !navController.navigationState.isNavigating)
               Marker(
                 point: navController.startPoint!,
                 width: 60,
@@ -250,7 +256,12 @@ class _MapPageState extends State<MapPage> {
                 child: const Icon(Icons.flag, color: Colors.green, size: 40),
               ),
             Marker(
-              point: locationController.currentPosition,
+              // Si on navigue, on utilise la position "live", sinon la position fixe
+              point:
+                  (navController.navigationState.isNavigating &&
+                      navController.currentLivePosition != null)
+                  ? navController.currentLivePosition!
+                  : locationController.currentPosition,
               width: 60,
               height: 60,
               child: Transform.rotate(

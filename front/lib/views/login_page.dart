@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../controllers/auth_controller.dart';
-import '../models/map_page.dart';
+import 'map_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -32,7 +32,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _signIn() async {
     final controller = context.read<AuthController>();
-    
+
     try {
       final success = await controller.signIn(
         _emailController.text.trim(),
@@ -40,9 +40,9 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Connexion réussie !')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Connexion réussie !')));
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const MapPage()),
@@ -51,10 +51,7 @@ class _LoginPageState extends State<LoginPage> {
     } on AuthException catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error.message),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(error.message), backgroundColor: Colors.red),
         );
       }
     }
@@ -62,7 +59,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _signUp() async {
     final controller = context.read<AuthController>();
-    
+
     try {
       final success = await controller.signUp(
         _emailController.text.trim(),
@@ -77,10 +74,7 @@ class _LoginPageState extends State<LoginPage> {
     } on AuthException catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error.message),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(error.message), backgroundColor: Colors.red),
         );
       }
     }
