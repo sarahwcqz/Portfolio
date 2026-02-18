@@ -157,7 +157,7 @@ class NavigationController extends ChangeNotifier {
     _gpsSubscription = _locationService.getPositionStream().listen((
       newPosition,
     ) {
-      _currentLivePosition = newPosition; // ✅ Pas de lissage
+      _currentLivePosition = newPosition;
       _onPositionUpdate?.call(newPosition);
 
       if (_navigationState.isNavigating) {
@@ -195,11 +195,27 @@ class NavigationController extends ChangeNotifier {
       newDeviationCounter = 0;
     }
 
-    int pointIndex =
-        (_navigationState.currentStepIndex *
-        routePoints.length ~/
-        _navigationState.instructions.length);
-    if (pointIndex >= routePoints.length) pointIndex = routePoints.length - 1;
+    // Utilise le way_point exact fourni par ORS
+    int pointIndex;
+    try {
+      final currentInstruction =
+          _navigationState.instructions[_navigationState.currentStepIndex];
+      final wayPoints = currentInstruction['way_points'] as List<dynamic>;
+      pointIndex = wayPoints[1] as int; // way_points[1] = fin de l'étape
+
+      // Sécurité : vérifie que l'index est valide
+      if (pointIndex >= routePoints.length) {
+        pointIndex = routePoints.length - 1;
+      }
+    } catch (e) {
+      // Fallback sur l'ancienne méthode si way_points n'existe pas
+      debugPrint("way_points non disponible, utilisation approximation");
+      pointIndex =
+          (_navigationState.currentStepIndex *
+          routePoints.length ~/
+          _navigationState.instructions.length);
+      if (pointIndex >= routePoints.length) pointIndex = routePoints.length - 1;
+    }
 
     final targetPoint = routePoints[pointIndex];
     double distance = _locationService.calculateDistance(
@@ -224,7 +240,7 @@ class NavigationController extends ChangeNotifier {
         );
         notifyListeners();
 
-        _onArrival?.call(); // Enfin utilisé !
+        _onArrival?.call();
         stopNavigation(); // On arrête tout proprement
         return;
       } else {
@@ -331,7 +347,7 @@ class NavigationController extends ChangeNotifier {
       case 'orange':
         return Colors.orange;
       default:
-        return Colors.blue; // Couleur par défaut
+        return Colors.blue;
     }
   }
 }
