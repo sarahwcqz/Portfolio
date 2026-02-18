@@ -72,6 +72,9 @@ dependencies:
   # to be able to cut code into MVC
   provider: 6.1.5
 
+  # for don't stop ecran
+  wakelock_plus: ^1.4.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -89,4 +89,22 @@ class LocationService {
 
     return distToStart < distToEnd ? distToStart : distToEnd;
   }
+
+  Stream<LatLng> getPositionStream() {
+    return Stream.periodic(const Duration(milliseconds: 500)).asyncMap((
+      _,
+    ) async {
+      try {
+        final position = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+          ),
+        );
+        return LatLng(position.latitude, position.longitude);
+      } catch (e) {
+        final lastKnown = await getLastKnownPosition();
+        return lastKnown ?? const LatLng(0, 0);
+      }
+    });
+  }
 }
