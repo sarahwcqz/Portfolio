@@ -23,11 +23,13 @@ class NavigationController extends ChangeNotifier {
   Timer? _gpsTimer;
   StreamSubscription<double>? _compassSubscription;
   MapController? _mapController;
+  bool _isRecalculating = false;
 
   // Callbacks pour la navigation
   VoidCallback? _onStepReached;
   VoidCallback? _onArrival;
   Function(LatLng)? _onPositionUpdate;
+  VoidCallback? _onRecalculating;
 
   // Getters
   LatLng? get startPoint => _startPoint;
@@ -82,6 +84,7 @@ class NavigationController extends ChangeNotifier {
   Future<void> startNavigation({
     VoidCallback? onStepReached,
     VoidCallback? onArrival,
+    VoidCallback? onRecalculating,
   }) async {
     if (_selectedRouteIndex == null) {
       throw Exception("Veuillez sélectionner un itinéraire");
@@ -89,6 +92,7 @@ class NavigationController extends ChangeNotifier {
 
     _onStepReached = onStepReached;
     _onArrival = onArrival;
+    _onRecalculating = onRecalculating;
 
     final selectedRoute = _availableRoutes[_selectedRouteIndex!];
 
@@ -110,6 +114,8 @@ class NavigationController extends ChangeNotifier {
       currentStepIndex: 0,
       distanceToNextStep: 0.0,
       currentHeading: 0.0,
+      distanceFromRoute: 0.0,
+      deviationCounter: 0,
     );
 
     _startCompassTracking();
@@ -124,10 +130,25 @@ class NavigationController extends ChangeNotifier {
       return;
     }
 
+    double lastHeading = 0.0;
+    DateTime lastUpdate = DateTime.now();
+
     _compassSubscription = compassStream.listen((heading) {
+      final now = DateTime.now();
+
+      if (now.difference(lastUpdate).inMilliseconds < 50) {
+        return;
+      }
+
+      if ((heading - lastHeading).abs() < 1) {
+        return;
+      }
+
+      lastHeading = heading;
+      lastUpdate = now;
+
       _navigationState = _navigationState.copyWith(currentHeading: heading);
 
-      // Faire tourner la carte selon l'orientation
       if (_mapController != null) {
         _mapController!.moveAndRotate(
           _mapController!.camera.center,
@@ -144,7 +165,6 @@ class NavigationController extends ChangeNotifier {
     _compassSubscription?.cancel();
     _compassSubscription = null;
 
-    // Remettre la carte à plat
     if (_mapController != null) {
       _mapController!.moveAndRotate(
         _mapController!.camera.center,
@@ -166,10 +186,8 @@ class NavigationController extends ChangeNotifier {
       try {
         final position = await _locationService.getCurrentPosition();
 
-        // Notifier la view de la nouvelle position
         _onPositionUpdate?.call(position);
 
-        // Si en navigation, mettre à jour
         if (_navigationState.isNavigating) {
           _updateNavigation(position);
         }
@@ -179,7 +197,7 @@ class NavigationController extends ChangeNotifier {
     });
   }
 
-  // Mettre à jour la navigation
+  // MODIFIÉ : Mettre à jour la navigation avec détection de déviation
   void _updateNavigation(LatLng currentPosition) {
     if (!_navigationState.isNavigating ||
         _selectedRouteIndex == null ||
@@ -190,6 +208,30 @@ class NavigationController extends ChangeNotifier {
 
     final routePoints = _availableRoutes[_selectedRouteIndex!].points;
 
+    // NOUVEAU : Calcule la distance à la route
+    final distanceFromRoute = _locationService.distanceToPolyline(
+      currentPosition,
+      routePoints,
+    );
+
+    // NOUVEAU : Détecte les déviations
+    int newDeviationCounter = _navigationState.deviationCounter;
+
+    if (distanceFromRoute > 50) {
+      // Plus de 50m de la route
+      newDeviationCounter++;
+
+      // Après 5 détections (5 × 2s = 10 secondes)
+      if (newDeviationCounter >= 5 && !_isRecalculating) {
+        debugPrint("Déviation détectée ! Recalcul automatique...");
+        _recalculateRouteAutomatically(currentPosition);
+        return; // Sort de la fonction pour ne pas continuer la mise à jour
+      }
+    } else {
+      newDeviationCounter = 0; // Reset si on revient sur la route
+    }
+
+    // Calcul de la distance à la prochaine étape
     int pointIndex =
         (_navigationState.currentStepIndex *
                 routePoints.length /
@@ -201,7 +243,6 @@ class NavigationController extends ChangeNotifier {
     }
 
     final targetPoint = routePoints[pointIndex];
-
     double distance = _locationService.calculateDistance(
       currentPosition,
       targetPoint,
@@ -214,11 +255,15 @@ class NavigationController extends ChangeNotifier {
       _navigationState = _navigationState.copyWith(
         currentStepIndex: _navigationState.currentStepIndex + 1,
         distanceToNextStep: distance,
+        distanceFromRoute: distanceFromRoute,
+        deviationCounter: newDeviationCounter,
       );
       _onStepReached?.call();
     } else {
       _navigationState = _navigationState.copyWith(
         distanceToNextStep: distance,
+        distanceFromRoute: distanceFromRoute,
+        deviationCounter: newDeviationCounter,
       );
     }
 
@@ -232,6 +277,63 @@ class NavigationController extends ChangeNotifier {
     notifyListeners();
   }
 
+  //FONCTION : Recalcul automatique
+  Future<void> _recalculateRouteAutomatically(LatLng currentPosition) async {
+    if (_isRecalculating || _destinationPoint == null) return;
+
+    _isRecalculating = true;
+    _onRecalculating?.call(); // Notifie la vue
+
+    try {
+      debugPrint("Recalcul de l'itinéraire...");
+
+      // Utilise la position actuelle comme nouveau départ
+      _startPoint = currentPosition;
+
+      // Recalcule les routes
+      final request = RouteRequest(
+        startLat: _startPoint!.latitude,
+        startLng: _startPoint!.longitude,
+        destLat: _destinationPoint!.latitude,
+        destLng: _destinationPoint!.longitude,
+      );
+
+      _availableRoutes = await _routingService.calculateRoutes(request);
+
+      // Garde la même sélection (même type de route)
+      final wasAvoidRoute = _selectedRouteIndex == 1;
+      _selectedRouteIndex = wasAvoidRoute && _availableRoutes.length > 1
+          ? 1
+          : 0;
+
+      final selectedRoute = _availableRoutes[_selectedRouteIndex!];
+
+      // Récupère les nouvelles instructions
+      final instructions = await _routingService.getInstructions(
+        selectedRoute.routeId,
+        request,
+      );
+
+      // Réinitialise la navigation avec le nouvel itinéraire
+      _navigationState = NavigationState(
+        isNavigating: true,
+        instructions: instructions,
+        currentStepIndex: 0,
+        distanceToNextStep: 0.0,
+        currentHeading: _navigationState.currentHeading,
+        distanceFromRoute: 0.0,
+        deviationCounter: 0,
+      );
+
+      notifyListeners();
+      debugPrint("Itinéraire recalculé !");
+    } catch (e) {
+      debugPrint("Erreur recalcul : $e");
+    } finally {
+      _isRecalculating = false;
+    }
+  }
+
   // Arrêter la navigation
   void stopNavigation() {
     _gpsTimer?.cancel();
@@ -239,6 +341,8 @@ class NavigationController extends ChangeNotifier {
     _navigationState = NavigationState.initial();
     _onStepReached = null;
     _onArrival = null;
+    _onRecalculating = null;
+    _isRecalculating = false;
     notifyListeners();
   }
 

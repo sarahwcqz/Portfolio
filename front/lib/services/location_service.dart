@@ -60,4 +60,33 @@ class LocationService {
       to.longitude,
     );
   }
+
+  //..............................Calculate point mini betwen point and polyline...........
+  double distanceToPolyline(LatLng point, List<LatLng> polyline) {
+    if (polyline.isEmpty) return double.infinity;
+
+    double minDistance = double.infinity;
+
+    // Calcule la distance à chaque segment de la polyline
+    for (int i = 0; i < polyline.length - 1; i++) {
+      final segmentStart = polyline[i];
+      final segmentEnd = polyline[i + 1];
+
+      final distance = _distanceToSegment(point, segmentStart, segmentEnd);
+      if (distance < minDistance) {
+        minDistance = distance;
+      }
+    }
+
+    return minDistance;
+  }
+
+  /// Calcule la distance d'un point à un segment de ligne
+  double _distanceToSegment(LatLng point, LatLng start, LatLng end) {
+    // Distance directe aux extrémités
+    final distToStart = calculateDistance(point, start);
+    final distToEnd = calculateDistance(point, end);
+
+    return distToStart < distToEnd ? distToStart : distToEnd;
+  }
 }

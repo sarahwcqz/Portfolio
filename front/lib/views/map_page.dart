@@ -90,6 +90,7 @@ class _MapPageState extends State<MapPage> {
       await navController.startNavigation(
         onStepReached: () => _showMessage("Étape suivante"),
         onArrival: () => _showSuccess("Vous êtes arrivé !"),
+        onRecalculating: () => _showMessage("Recalcul de l'itinéraire..."),
       );
       _hideLoader();
       _showMessage("Navigation démarrée");
