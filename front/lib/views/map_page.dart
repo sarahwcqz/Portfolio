@@ -40,16 +40,6 @@ class _MapPageState extends State<MapPage> {
 
     navController.setMapController(_mapController);
 
-    navController.startGPSTracking(
-      onPositionUpdate: (position) {
-        if (navController.navigationState.isNavigating) {
-          _mapController.move(position, 17.0);
-        }
-        if (mounted) setState(() {});
-      },
-      onError: (message) => _showError(message),
-    );
-
     final success = await locationController.determinePosition();
     if (!success) {
       _showError("Erreur GPS - Vérifiez les permissions");
@@ -60,7 +50,18 @@ class _MapPageState extends State<MapPage> {
       locationController.currentPosition,
       "Ma position actuelle",
     );
+
     _mapController.move(locationController.currentPosition, 15.0);
+
+    navController.startGPSTracking(
+      onPositionUpdate: (position) {
+        if (navController.navigationState.isNavigating) {
+          _mapController.move(position, 17.0);
+        }
+        if (mounted) setState(() {});
+      },
+      onError: (message) => _showError(message),
+    );
   }
 
   Future<void> _onRecenterPressed() async {
