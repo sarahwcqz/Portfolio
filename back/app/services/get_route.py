@@ -80,6 +80,7 @@ async def get_route(
                 "instruction": step['instruction'],
                 "distance": step['distance'],
                 "duration": step['duration'],
+                "way_points": step['way_points'],
             }
             for idx, step in enumerate(steps)
         ]

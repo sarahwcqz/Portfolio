@@ -4,6 +4,8 @@ class NavigationState {
   final int currentStepIndex;
   final double distanceToNextStep;
   final double currentHeading;
+  final double distanceFromRoute;
+  final int deviationCounter;
 
   NavigationState({
     required this.isNavigating,
@@ -11,6 +13,8 @@ class NavigationState {
     required this.currentStepIndex,
     required this.distanceToNextStep,
     this.currentHeading = 0.0,
+    this.distanceFromRoute = 0.0,
+    this.deviationCounter = 0,
   });
 
   factory NavigationState.initial() {
@@ -20,6 +24,8 @@ class NavigationState {
       currentStepIndex: 0,
       distanceToNextStep: 0.0,
       currentHeading: 0.0,
+      distanceFromRoute: 0.0,
+      deviationCounter: 0,
     );
   }
 
@@ -29,6 +35,8 @@ class NavigationState {
     int? currentStepIndex,
     double? distanceToNextStep,
     double? currentHeading,
+    double? distanceFromRoute,
+    int? deviationCounter,
   }) {
     return NavigationState(
       isNavigating: isNavigating ?? this.isNavigating,
@@ -36,6 +44,8 @@ class NavigationState {
       currentStepIndex: currentStepIndex ?? this.currentStepIndex,
       distanceToNextStep: distanceToNextStep ?? this.distanceToNextStep,
       currentHeading: currentHeading ?? this.currentHeading,
+      distanceFromRoute: distanceFromRoute ?? this.distanceFromRoute,
+      deviationCounter: deviationCounter ?? this.deviationCounter,
     );
   }
 }

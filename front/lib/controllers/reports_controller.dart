@@ -18,16 +18,18 @@ class ReportController extends ChangeNotifier {
 
   // ─── Appelé à chaque mouvement de carte ───────────────────────
   void onMapMoved(MapCamera camera) {
-    debugPrint('onMapMoved appelé');  // DEBUG
+    debugPrint('onMapMoved appelé'); // DEBUG
 
     final bbox = _getBoundingBoxFromCamera(camera);
-    debugPrint('bbox: ${bbox.minLat}, ${bbox.maxLat}, ${bbox.minLng}, ${bbox.maxLng}');  // DEBUG
+    debugPrint(
+      'bbox: ${bbox.minLat}, ${bbox.maxLat}, ${bbox.minLng}, ${bbox.maxLng}',
+    ); // DEBUG
 
     // Ignore si le mouvement est trop petit
     if (!bbox.hasSignificantlyChangedFrom(_lastBoundingBox)) {
-      debugPrint('Changement ignoré car trop insignifiant');  //
+      debugPrint('Changement ignoré car trop insignifiant'); //
       return;
-      }
+    }
 
     // Reset le timer à chaque mouvement
     _debounceTimer?.cancel();
@@ -45,11 +47,23 @@ class ReportController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _reports = await _service.getReportsInBoundingBox(bbox);
-      debugPrint('${_reports.length} reports chargés'); // DEBUG
-      for (var r in _reports) {
-      debugPrint('${r.type} at ${r.lat}, ${r.lng}');  // DEBUG
-    }
+      // On récupère tous les rapports via le service
+      final allReports = await _service.getReportsInBoundingBox(bbox);
+
+      // MODIFICATION : FILTRAGE PAR DATE UTC
+      final nowUtc = DateTime.now().toUtc();
+
+      _reports = allReports.where((r) {
+        // On vérifie si l'expiration est bien dans le futur par rapport à l'UTC
+        final isValid = r.expiresAt.isAfter(nowUtc);
+
+        if (!isValid) {
+          debugPrint('DEBUG: Signalement ${r.type} ignoré car expiré (UTC)');
+        }
+        return isValid;
+      }).toList();
+
+      debugPrint('${_reports.length} reports valides chargés et affichés');
     } catch (e) {
       debugPrint('Erreur chargement reports: $e');
       _reports = [];
