@@ -26,7 +26,7 @@ class MapReportLayer extends StatelessWidget {
   }
 
   Widget _buildIcon(String type) {
-    switch (type.toLowerCase()) {
+    switch (type.toLowerCase()) { // DEBUG (a changer en fct du choix de Leo)
       case 'accident':
         return const Icon(Icons.warning, color: Colors.red, size: 30);
       case 'travaux':
