@@ -15,11 +15,11 @@ async def get_reports_in_bbox(
     Gets reports active from bounding box.
     Returns id, type, lat, lng.
     """
-    now_iso = datetime.now(timezone.utc)
+    now_iso = datetime.now(timezone.utc).isoformat()
 
     try:
         response = supabase.table("reports") \
-            .select("id, type, lat, lng") \
+            .select("id, type, lat, lng, expires_at") \
             .gte("lat", min_lat) \
             .lte("lat", max_lat) \
             .gte("lng", min_lng) \

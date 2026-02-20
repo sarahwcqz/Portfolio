@@ -4,12 +4,12 @@ import '../models/reports_model.dart';
 import '../models/bounding_box_model.dart';
 
 class ReportService {
-  final String _baseUrl = 'http://10.0.2.2:8000/api/v1';
+  //final String _baseUrl = 'http://10.0.2.2:8000/api/v1';
+  final String _baseUrl =
+      'https://abstrusely-unreferred-demetrice.ngrok-free.dev/api/v1';
 
-  Future<List<ReportModel>> getReportsInBoundingBox(
-    BoundingBox bbox,
-  ) async {
-    final uri = Uri.parse('$_baseUrl/reports').replace(
+  Future<List<ReportModel>> getReportsInBoundingBox(BoundingBox bbox) async {
+    final uri = Uri.parse('$_baseUrl/reports/').replace(
       queryParameters: {
         'min_lat': bbox.minLat.toString(),
         'max_lat': bbox.maxLat.toString(),
