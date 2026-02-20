@@ -54,6 +54,16 @@ class _MapPageState extends State<MapPage> {
 
     _mapController.move(locationController.currentPosition, 15.0);
 
+    navController.startGPSTracking(
+      onPositionUpdate: (position) {
+        if (navController.navigationState.isNavigating) {
+          _mapController.move(position, 17.0);
+        }
+        if (mounted) setState(() {});
+      },
+      onError: (message) => _showError(message),
+    );
+
     // initial loading of reports when map is ready
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ReportController>().onMapMoved(_mapController.camera);
