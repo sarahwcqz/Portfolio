@@ -35,6 +35,8 @@ class _MapPageState extends State<MapPage> {
     super.dispose();
   }
 
+  bool _isFollowMode = true;
+
   Future<void> _initializeMap() async {
     final locationController = context.read<LocationController>();
     final navController = context.read<NavigationController>();
@@ -56,7 +58,7 @@ class _MapPageState extends State<MapPage> {
 
     navController.startGPSTracking(
       onPositionUpdate: (position) {
-        if (navController.navigationState.isNavigating) {
+        if (navController.navigationState.isNavigating && _isFollowMode) {
           _mapController.move(position, 17.0);
         }
         if (mounted) setState(() {});
@@ -71,6 +73,9 @@ class _MapPageState extends State<MapPage> {
   }
 
   Future<void> _onRecenterPressed() async {
+    setState(() {
+      _isFollowMode = true;
+    });
     final controller = context.read<LocationController>();
     await controller.determinePosition();
     _mapController.move(controller.currentPosition, 15.0);
@@ -198,6 +203,18 @@ class _MapPageState extends State<MapPage> {
               if (navController.availableRoutes.isNotEmpty &&
                   !navController.navigationState.isNavigating)
                 MapRouteCards(navController: navController),
+
+              if (!_isFollowMode && navController.navigationState.isNavigating)
+                Positioned(
+                  bottom: 90,
+                  right: 16,
+                  child: FloatingActionButton(
+                    onPressed: _onRecenterPressed,
+                    backgroundColor: const Color(0xFF512DA8), // Ton violet
+                    elevation: 4,
+                    child: const Icon(Icons.my_location, color: Colors.white),
+                  ),
+                ),
               MapFloatingButtons(
                 navState: navController.navigationState,
                 navController: navController,
@@ -223,6 +240,15 @@ class _MapPageState extends State<MapPage> {
         initialZoom: 13.0,
         // --------------------------- if mouvement on map -----------------
         onMapEvent: (event) {
+          if (event.source == MapEventSource.onDrag ||
+              event.source == MapEventSource.onMultiFinger ||
+              event.source == MapEventSource.scrollWheel) {
+            if (_isFollowMode) {
+              setState(() {
+                _isFollowMode = false;
+              });
+            }
+          }
           if (event is MapEventMoveEnd || event is MapEventScrollWheelZoom) {
             context.read<ReportController>().onMapMoved(event.camera);
           }
