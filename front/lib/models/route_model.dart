@@ -5,7 +5,7 @@ class RouteModel {
   final String name;
   final String description;
   final double distance;
-  final int duration;
+  final double duration;
   final String color;
   final List<LatLng> points;
 
@@ -25,7 +25,7 @@ class RouteModel {
       name: json['name'],
       description: json['description'] ?? '',
       distance: json['distance'].toDouble(),
-      duration: json['duration'],
+      duration: json['duration'].toDouble(),
       color: json['color'],
       points: (json['coordinates'] as List)
           .map((point) => LatLng(point['lat'], point['lng']))

@@ -12,6 +12,7 @@ import 'controllers/auth_controller.dart';
 import 'controllers/address_search_controller.dart';
 import 'controllers/location_controller.dart';
 import 'controllers/navigation_controller.dart';
+import 'controllers/reports_controller.dart';
 
 // ---------------------------------------------- INIT (supabase + keys) -------------------------------------------------
 Future<void> main() async {
@@ -46,6 +47,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AddressSearchController()),
         ChangeNotifierProvider(create: (_) => LocationController()),
         ChangeNotifierProvider(create: (_) => NavigationController()),
+        ChangeNotifierProvider(create: (_) => ReportController()),
       ],
 
       child: MaterialApp(

@@ -1,4 +1,3 @@
-// views/map_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 // import 'package:latlong2/latlong.dart';
@@ -6,12 +5,14 @@ import 'package:provider/provider.dart';
 
 import '../controllers/location_controller.dart';
 import '../controllers/navigation_controller.dart';
+import '../controllers/reports_controller.dart';
 import '../models/picked_location_model.dart';
 import 'address_search_page.dart';
 import 'widgets/map_address_fields.dart';
 import 'widgets/map_navigation_banner.dart';
 import 'widgets/map_route_cards.dart';
 import 'widgets/map_floating_buttons.dart';
+import 'widgets/map_reports_layer.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -61,6 +62,13 @@ class _MapPageState extends State<MapPage> {
       "Ma position actuelle",
     );
     _mapController.move(locationController.currentPosition, 15.0);
+
+    // initial loading of reports when map is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ReportController>().onMapMoved(
+        _mapController.camera,
+      );
+    });
   }
 
   Future<void> _onRecenterPressed() async {
@@ -209,6 +217,15 @@ class _MapPageState extends State<MapPage> {
       options: MapOptions(
         initialCenter: locationController.currentPosition,
         initialZoom: 13.0,
+        // --------------------------- if mouvement on map -----------------
+        onMapEvent: (event) {
+        if (event is MapEventMoveEnd ||
+            event is MapEventScrollWheelZoom) {
+          context.read<ReportController>().onMapMoved(
+            event.camera,
+          );
+        }
+      },
       ),
       children: [
         TileLayer(
@@ -229,6 +246,13 @@ class _MapPageState extends State<MapPage> {
             );
           }).toList(),
         ),
+        Consumer<ReportController>(
+        builder: (context, controller, child) {
+          return MapReportLayer(
+            reports: controller.reports,
+          );
+        },
+      ),
         MarkerLayer(
           markers: [
             if (navController.startPoint != null)

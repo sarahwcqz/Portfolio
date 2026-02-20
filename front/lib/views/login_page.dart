@@ -1,9 +1,8 @@
-// views/login_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../controllers/auth_controller.dart';
-import '../models/map_page.dart';
+import 'map_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});

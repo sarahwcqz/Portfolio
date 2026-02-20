@@ -30,5 +30,5 @@ async def get_reports_in_bbox(
         return response.data if response.data else []
 
     except Exception as e:
-        print(f"Erreur récupération signalements : {e}")
+        print(f"Erreur récupération reports : {e}")
         return []

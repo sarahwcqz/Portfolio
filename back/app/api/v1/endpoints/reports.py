@@ -1,4 +1,3 @@
-# app/api/v1/endpoints/reports.py
 from fastapi import APIRouter, Query
 from typing import List
 from app.models.reports import ReportResponse
@@ -7,7 +6,7 @@ from app.services.get_reports import get_reports_in_bbox
 router = APIRouter(prefix="/reports", tags=["reports"])
 
 # --------------------------- GET reports from a bounding box -----------------------------
-@router.get("/", response_model=List[ReportResponse])
+@router.get("/", response_model=List[ReportResponse])       # a list of ReportREsponses (from reports model)
 async def get_reports(
     min_lat: float = Query(..., description="Latitude minimum"),
     max_lat: float = Query(..., description="Latitude maximum"),
