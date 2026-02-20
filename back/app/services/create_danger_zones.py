@@ -41,10 +41,10 @@ async def get_reports_from_DB(
     max_lng: float
 ) -> List[Dict]:
     """
-    Récupère les signalements actifs dans une zone géographique.
+    Récupère les reports actifs dans une zone géographique.
     
     Returns:
-        Liste de signalements avec {lat, lng, radius_meters}
+        Liste de reports avec {lat, lng, radius_meters}
     """
 
     now_iso = datetime.now(timezone.utc)
@@ -62,7 +62,7 @@ async def get_reports_from_DB(
         return response.data if response.data else []
     
     except Exception as e:
-        print(f"Erreur lors de la récupération des signalements : {e}")
+        print(f"Erreur lors de la récupération des reports : {e}")
         return []
 
 # ----------------------------------------------- create polygons -------------------------------------
