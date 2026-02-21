@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 // import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../controllers/location_controller.dart';
 import '../controllers/navigation_controller.dart';
@@ -281,7 +282,13 @@ class _MapPageState extends State<MapPage> {
         MarkerLayer(
           markers: [
             if (navController.startPoint != null &&
-                !navController.navigationState.isNavigating)
+                !navController.navigationState.isNavigating &&
+                const Distance().as(
+                      LengthUnit.Meter,
+                      navController.startPoint!,
+                      locationController.currentPosition,
+                    ) >
+                    10)
               Marker(
                 point: navController.startPoint!,
                 width: 60,
