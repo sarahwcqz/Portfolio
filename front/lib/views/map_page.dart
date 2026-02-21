@@ -78,8 +78,12 @@ class _MapPageState extends State<MapPage> {
       _isFollowMode = true;
     });
     final controller = context.read<LocationController>();
+    final navController = context.read<NavigationController>();
     await controller.determinePosition();
-    _mapController.move(controller.currentPosition, 15.0);
+    double targetZoom = navController.navigationState.isNavigating
+        ? 17.0
+        : 15.0;
+    _mapController.move(controller.currentPosition, targetZoom);
   }
 
   Future<void> _onCalculateRoutesPressed() async {
