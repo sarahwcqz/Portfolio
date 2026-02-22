@@ -30,8 +30,17 @@ class MapReportLayer extends StatelessWidget {
         builder: (context, clusterMarkers) {
           return Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              color: Colors.blue, // Style temporaire
+              shape: BoxShape.circle,
+              color: Colors.orange.withValues(alpha: 0.9), // Style temporaire
+              border: Border.all(color: Colors.white, width: 3),
+              boxShadow: [
+                // ✅ Ombre pour relief
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Center(
               child: Text(
@@ -39,6 +48,7 @@ class MapReportLayer extends StatelessWidget {
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
             ),
