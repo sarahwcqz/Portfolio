@@ -9,7 +9,7 @@ class RoutingService {
   // change for environement
   // false = émulateur Android
   // true  = téléphone réel (ngrok)
-  static const bool _isPhysicalDevice = true;
+  static const bool _isPhysicalDevice = false;
 
   String get _baseUrl => _isPhysicalDevice
       ? (dotenv.env['NGROK_URL'] ??
