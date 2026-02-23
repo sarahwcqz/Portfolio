@@ -253,6 +253,8 @@ class _MapPageState extends State<MapPage> {
       options: MapOptions(
         initialCenter: locationController.currentPosition,
         initialZoom: 13.0,
+        minZoom: 10.0,
+        maxZoom: 18.0,
         // --------------------------- if mouvement on map -----------------
         onMapEvent: (event) {
           if (event.source == MapEventSource.onDrag ||

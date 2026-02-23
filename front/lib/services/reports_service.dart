@@ -5,8 +5,8 @@ import '../models/bounding_box_model.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ReportService {
-  final String _baseUrl = 'http://10.0.2.2:8000/api/v1';
-  //final String _baseUrl = dotenv.env['NGROK_URL'] ?? '';
+  //final String _baseUrl = 'http://10.0.2.2:8000/api/v1';
+  final String _baseUrl = dotenv.env['NGROK_URL'] ?? '';
 
   Future<List<ReportModel>> getReportsInBoundingBox(BoundingBox bbox) async {
     final uri = Uri.parse('$_baseUrl/reports/').replace(
