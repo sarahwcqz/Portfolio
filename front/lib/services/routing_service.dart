@@ -7,8 +7,8 @@ import '../models/route_model.dart';
 
 class RoutingService {
   // change for environement
-  // false = émulateur Android
   // true  = téléphone réel (ngrok)
+  // false = émulateur Android
   static const bool _isPhysicalDevice = true;
 
   String get _baseUrl => _isPhysicalDevice
