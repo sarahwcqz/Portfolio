@@ -84,6 +84,11 @@ class _MapPageState extends State<MapPage> {
         ? 17.0
         : 15.0;
     _mapController.move(controller.currentPosition, targetZoom);
+
+    // call function to get reports from Db in visible bounding box
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ReportController>().onMapMoved(_mapController.camera);
+    });
   }
 
   Future<void> _onCalculateRoutesPressed() async {
@@ -143,6 +148,11 @@ class _MapPageState extends State<MapPage> {
         navController.setDestinationPoint(result.latLng, address);
       }
       _mapController.move(result.latLng, 15.0);
+
+      // call function to get reports from Db in visible bounding box
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<ReportController>().onMapMoved(_mapController.camera);
+      });
     }
   }
 
