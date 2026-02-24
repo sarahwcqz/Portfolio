@@ -130,8 +130,8 @@ class NavigationController extends ChangeNotifier {
 
   void stopNavigation() {
     // NETTOYAGE complet
-    _gpsSubscription?.cancel();
-    _gpsSubscription = null;
+    //_gpsSubscription?.cancel();
+    // _gpsSubscription = null;
     _stopCompassTracking();
 
     // DÉSACTIVER Wakelock
@@ -152,21 +152,24 @@ class NavigationController extends ChangeNotifier {
     Function(String)? onError,
   }) {
     _onPositionUpdate = onPositionUpdate;
+
     _gpsSubscription?.cancel();
 
     _gpsSubscription = _locationService.getPositionStream().listen((
       newPosition,
     ) {
       _currentLivePosition = newPosition;
+
+      notifyListeners();
+
       _onPositionUpdate?.call(newPosition);
 
       if (_navigationState.isNavigating) {
         _updateNavigation(newPosition);
       }
-
-      notifyListeners();
     }, onError: (e) => onError?.call("Erreur GPS: $e"));
   }
+
   // --- LOGIQUE INTERNE ---
 
   void _updateNavigation(LatLng currentPosition) {

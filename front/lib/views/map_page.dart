@@ -51,16 +51,15 @@ class _MapPageState extends State<MapPage> {
     required String userId,
     required String type,
   }) {
+    final navController = context.read<NavigationController>();
     final locationController = context.read<LocationController>();
-
-    final double lat = locationController.currentPosition.latitude;
-    final double lng = locationController.currentPosition.longitude;
-
+    final position =
+        navController.currentLivePosition ?? locationController.currentPosition;
     return {
       "user_id": userId,
       "type": type.toLowerCase(),
-      "lat": lat,
-      "lng": lng,
+      "lat": position.latitude,
+      "lng": position.longitude,
       "expires_at": DateTime.now()
           .add(const Duration(minutes: 15))
           .toUtc()
@@ -367,12 +366,9 @@ class _MapPageState extends State<MapPage> {
                 child: const Icon(Icons.flag, color: Colors.green, size: 40),
               ),
             Marker(
-              // Si on navigue, on utilise la position "live", sinon la position fixe
               point:
-                  (navController.navigationState.isNavigating &&
-                      navController.currentLivePosition != null)
-                  ? navController.currentLivePosition!
-                  : locationController.currentPosition,
+                  navController.currentLivePosition ??
+                  locationController.currentPosition,
               width: 60,
               height: 60,
               child: Transform.rotate(
@@ -397,9 +393,9 @@ class _MapPageState extends State<MapPage> {
   Future<void> _sendReportToBackend(Map<String, dynamic> data) async {
     _showLoader("Envoi du signalement...");
     try {
-      // final baseUrl =
-      // dotenv.env['NGROK_URL'] ?? 'https://default-url.ngrok-free.app';
-      final String baseUrl = 'http://10.0.2.2:8000/api/v1';
+      final baseUrl =
+          dotenv.env['NGROK_URL'] ?? 'https://default-url.ngrok-free.app';
+      //final String baseUrl = 'http://10.0.2.2:8000/api/v1';
       final finalUri = Uri.parse('$baseUrl/reports/');
       final response = await http.post(
         finalUri,
