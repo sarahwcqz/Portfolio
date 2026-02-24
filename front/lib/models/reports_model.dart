@@ -15,10 +15,13 @@ class ReportModel {
 
   factory ReportModel.fromJson(Map<String, dynamic> json) {
     return ReportModel(
-      id: json['id'],
-      type: json['type'],
-      lat: json['lat'].toDouble(),
-      lng: json['lng'].toDouble(),
+      // On utilise des clés qui correspondent exactement au JSON de ton API Python
+      id: json['id'].toString(),
+      type: json['type'] as String,
+      // .toDouble() est vital ici au cas où le serveur envoie un entier
+      lat: (json['lat'] as num).toDouble(),
+      lng: (json['lng'] as num).toDouble(),
+      // Parsing de la date avec conversion UTC
       expiresAt: DateTime.parse(json['expires_at']).toUtc(),
     );
   }

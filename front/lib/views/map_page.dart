@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 // import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../controllers/location_controller.dart';
 import '../controllers/navigation_controller.dart';
@@ -14,6 +16,8 @@ import 'widgets/map_navigation_banner.dart';
 import 'widgets/map_route_cards.dart';
 import 'widgets/map_floating_buttons.dart';
 import 'widgets/map_reports_layer.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -24,6 +28,45 @@ class MapPage extends StatefulWidget {
 
 class _MapPageState extends State<MapPage> {
   final MapController _mapController = MapController();
+
+  final supabase = Supabase.instance.client;
+
+  void _handleReportButtonPressed() {
+    final user = supabase.auth.currentUser;
+
+    if (user != null) {
+      // Étape 3 : On ouvre l'interface (UI)
+      _showReportModal(user.id);
+    } else {
+      // Petit message d'erreur si pas connecté
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Connectez-vous pour signaler un incident !"),
+        ),
+      );
+    }
+  }
+
+  Map<String, dynamic> _createReportData({
+    required String userId,
+    required String type,
+  }) {
+    final locationController = context.read<LocationController>();
+
+    final double lat = locationController.currentPosition.latitude;
+    final double lng = locationController.currentPosition.longitude;
+
+    return {
+      "user_id": userId,
+      "type": type.toLowerCase(),
+      "lat": lat,
+      "lng": lng,
+      "expires_at": DateTime.now()
+          .add(const Duration(minutes: 15))
+          .toUtc()
+          .toIso8601String(),
+    };
+  }
 
   @override
   void initState() {
@@ -221,11 +264,11 @@ class _MapPageState extends State<MapPage> {
 
               if (!_isFollowMode && navController.navigationState.isNavigating)
                 Positioned(
-                  bottom: 90,
+                  bottom: 147,
                   right: 16,
                   child: FloatingActionButton(
                     onPressed: _onRecenterPressed,
-                    backgroundColor: const Color(0xFF512DA8), // Ton violet
+                    backgroundColor: const Color(0xFF512DA8),
                     elevation: 4,
                     child: const Icon(Icons.my_location, color: Colors.white),
                   ),
@@ -236,6 +279,7 @@ class _MapPageState extends State<MapPage> {
                 onRecenter: _onRecenterPressed,
                 onCalculateRoutes: _onCalculateRoutesPressed,
                 onStartNavigation: _onStartNavigationPressed,
+                onReportIncident: _handleReportButtonPressed,
               ),
             ],
           );
@@ -347,6 +391,142 @@ class _MapPageState extends State<MapPage> {
           ],
         ),
       ],
+    );
+  }
+
+  Future<void> _sendReportToBackend(Map<String, dynamic> data) async {
+    _showLoader("Envoi du signalement...");
+    try {
+      // final baseUrl =
+      // dotenv.env['NGROK_URL'] ?? 'https://default-url.ngrok-free.app';
+      final String baseUrl = 'http://10.0.2.2:8000/api/v1';
+      final finalUri = Uri.parse('$baseUrl/reports/');
+      final response = await http.post(
+        finalUri,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(data),
+      );
+
+      _hideLoader();
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        _showSuccess("Signalement enregistré !");
+        // On rafraîchit la carte pour voir le point immédiatement
+        if (mounted) {
+          context.read<ReportController>().onMapMoved(_mapController.camera);
+        }
+      } else {
+        _showError("Erreur serveur : ${response.statusCode}");
+      }
+    } catch (e) {
+      _hideLoader();
+      _showError("Impossible de contacter le serveur");
+    }
+  }
+
+  void _showReportModal(String userId) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
+        ),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          top: 15,
+          left: 20,
+          right: 20,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[600],
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              "Quel incident voulez-vous signaler ?",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 25),
+            GridView.count(
+              shrinkWrap: true,
+              crossAxisCount: 2,
+              mainAxisSpacing: 15,
+              crossAxisSpacing: 15,
+              childAspectRatio: 1.5,
+              children: [
+                _buildReportOption(
+                  userId,
+                  'travaux',
+                  Icons.construction,
+                  Colors.orange,
+                ),
+                _buildReportOption(
+                  userId,
+                  'accident',
+                  Icons.warning,
+                  Colors.red,
+                ),
+                _buildReportOption(
+                  userId,
+                  'danger',
+                  Icons.dangerous,
+                  Colors.redAccent,
+                ),
+                _buildReportOption(
+                  userId,
+                  'test',
+                  Icons.bug_report,
+                  Colors.purple,
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReportOption(
+    String userId,
+    String type,
+    IconData icon,
+    Color color,
+  ) {
+    return InkWell(
+      onTap: () {
+        final data = _createReportData(userId: userId, type: type);
+        Navigator.pop(context);
+        _sendReportToBackend(data);
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: color.withValues(alpha: 0.5)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 35),
+            const SizedBox(height: 8),
+            Text(
+              type.toUpperCase(),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

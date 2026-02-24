@@ -8,6 +8,7 @@ class MapFloatingButtons extends StatelessWidget {
   final VoidCallback onRecenter;
   final VoidCallback onCalculateRoutes;
   final VoidCallback onStartNavigation;
+  final VoidCallback onReportIncident;
 
   const MapFloatingButtons({
     super.key,
@@ -16,6 +17,7 @@ class MapFloatingButtons extends StatelessWidget {
     required this.onRecenter,
     required this.onCalculateRoutes,
     required this.onStartNavigation,
+    required this.onReportIncident,
   });
 
   @override
@@ -26,6 +28,14 @@ class MapFloatingButtons extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          FloatingActionButton(
+            heroTag: "report",
+            onPressed: onReportIncident,
+            backgroundColor: Colors.orange,
+            foregroundColor: Colors.white,
+            child: const Icon(Icons.warning_amber_rounded),
+          ),
+          const SizedBox(height: 10),
           if (!navState.isNavigating) ...[
             FloatingActionButton(
               heroTag: "gps",
