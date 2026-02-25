@@ -43,21 +43,17 @@ async def create_report(
     """
     Reçoit un signalement de Flutter et l'enregistre dans Supabase
     """
-    # On transforme les données validées par Pydantic en dictionnaire
     report_data = report.model_dump(mode='json') 
     report_data["user_id"] = user_id
     incident_type = report_data.get("type", "test").lower()
     report_data["radius_meters"] = INCIDENT_RADII.get(incident_type, 50)
     try:
-        # On insère dans la table 'reports'
         response = supabase.table("reports").insert(report_data).execute()
         
-        # On retourne les données (Supabase renvoie une liste par défaut)
         return response.data
     
     except Exception as e:
         print(f" Erreur lors de l'insertion Supabase : {e}")
-        # On lève une erreur HTTP 500 propre pour FastAPI
         raise HTTPException(status_code=500, detail=str(e))
 # ------------------------------ PUT / PATCH ? confirm a report (restart timestamp) -------
 @router.put("/{id}/confirm")
