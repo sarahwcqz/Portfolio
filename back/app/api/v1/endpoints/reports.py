@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Depends
 from typing import List
 from app.models.reports import ReportResponse
 from app.services.get_reports import get_reports_in_bbox
@@ -12,6 +12,8 @@ from app.utils.report_validations import (
     check_report_exists,
     check_user_has_not_voted
 )
+from app.utils.auth import get_current_user_id
+
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 supabase = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
@@ -45,7 +47,7 @@ def create_report():
 @router.patch("/{report_id}/confirm")
 def confirm_report(
     report_id: str,
-    user_id: str = "temp-user-id"  # TO DO: Récup JWT
+    user_id: str = Depends(get_current_user_id)
 ):
     """
     Confirms that a report is still present
@@ -60,7 +62,7 @@ def confirm_report(
     # create row in report_confirmations table
     supabase.table("report_confirmations").insert({
         "report_id": report_id,
-        "user_id": user_id,         # unicity? or automatique?
+        "user_id": user_id,
     }).execute()
 
     # reset expires_at depending on the type of report
@@ -80,7 +82,7 @@ def confirm_report(
 @router.patch("/{report_id}/infirm")
 def infirm_report(
     report_id: str,
-    user_id: str = "temp-user-id"
+    user_id: str = Depends(get_current_user_id)
 ):
     """
     The report is no longer present
@@ -101,10 +103,10 @@ def infirm_report(
     }).execute()
 
     # Increment counter
-    new_confirm_count = report.get("confirmation_count", 0) + 1
+    new_infirm_count = report.get("infirmation_count", 0) + 1
 
     # IF >= 3 votes -> Expires now
-    if new_confirm_count >= INFIRM_THRESHOLD:
+    if new_infirm_count >= INFIRM_THRESHOLD:
         supabase.table("reports").update({
             "expires_at": datetime.now(timezone.utc).isoformat()
         }).eq("id", report_id).execute()
@@ -112,17 +114,17 @@ def infirm_report(
         return {
             "status": "resolved",
             "message": "Merci pour votre vote! =)",
-            "confirm_count": new_confirm_count    # DEBUG to be removed
+            "infirm_count": new_infirm_count    # DEBUG to be removed
         }
     
     # IF < 3 votes -> increment counter
     else:
         supabase.table("reports").update({
-            "confirm_count": new_confirm_count
+            "infirmation_count": new_infirm_count
         }).eq("id", report_id).execute()
         
         return {
             "status": "vote_recorded",
             "message": "Vote bien pris en compte, merci!",
-            "confirm_count": new_confirm_count
+            "infirm_count": new_infirm_count
         }

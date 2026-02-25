@@ -17,7 +17,7 @@ def check_report_exists(report_id: str) -> dict:
     returns data of report.
     """
     report = supabase.table("reports") \
-        .select("id, type, confirmation_count") \
+        .select("id, type, infirmation_count") \
         .eq("id", report_id) \
         .single() \
         .execute()
