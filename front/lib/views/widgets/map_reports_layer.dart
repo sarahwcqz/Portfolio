@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:latlong2/latlong.dart';
 import '../../models/reports_model.dart';
+import 'report_action_dialog.dart';
 
 class MapReportLayer extends StatelessWidget {
   final List<ReportModel> reports;
@@ -11,12 +12,18 @@ class MapReportLayer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<Marker> markers = reports.map((s) {
+    final List<Marker> markers = reports.map((report) {
       return Marker(
-        point: LatLng(s.lat, s.lng),
+        point: LatLng(report.lat, report.lng),
         width: 40,
         height: 40,
-        child: _buildIcon(s.type),
+        child: GestureDetector(      // <------------------------ onTAP -> open dialog
+            onTap: () => _showConfirmationDialog(
+              context,
+              report,
+            ),
+          child: _buildIcon(report.type),
+        ),
       );
     }).toList();
 
@@ -31,10 +38,9 @@ class MapReportLayer extends StatelessWidget {
           return Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.orange.withValues(alpha: 0.9), // Style temporaire
+              color: Colors.orange.withValues(alpha: 0.9), // DEBUG to change
               border: Border.all(color: Colors.white, width: 3),
               boxShadow: [
-                // ✅ Ombre pour relief
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.3),
                   blurRadius: 4,
@@ -55,6 +61,16 @@ class MapReportLayer extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+
+  // --------------------------------- open dialog -----------------------------
+  void _showConfirmationDialog(BuildContext context, ReportModel report) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return ReportConfirmationDialog(report: report);
+      },
     );
   }
 
