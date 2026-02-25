@@ -90,25 +90,25 @@ class _MapPageState extends State<MapPage> {
       _showError("Erreur GPS - Vérifiez les permissions");
       return;
     }
-
     navController.setStartPoint(
       locationController.currentPosition,
       "Ma position actuelle",
     );
-
     _mapController.move(locationController.currentPosition, 15.0);
 
     navController.startGPSTracking(
       onPositionUpdate: (position) {
-        if (navController.navigationState.isNavigating && _isFollowMode) {
-          _mapController.move(position, 17.0);
+        if (_isFollowMode) {
+          double targetZoom = navController.navigationState.isNavigating
+              ? 17.0
+              : _mapController.camera.zoom;
+
+          _mapController.move(position, targetZoom);
         }
         if (mounted) setState(() {});
       },
       onError: (message) => _showError(message),
     );
-
-    // initial loading of reports when map is ready
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ReportController>().onMapMoved(_mapController.camera);
     });
@@ -341,13 +341,16 @@ class _MapPageState extends State<MapPage> {
           markers: [
             if (navController.startPoint != null &&
                 !navController.navigationState.isNavigating &&
+                !navController.startAddress.toLowerCase().contains(
+                  "position",
+                ) &&
                 const Distance().as(
                       LengthUnit.Meter,
                       navController.startPoint!,
                       navController.currentLivePosition ??
                           locationController.currentPosition,
                     ) >
-                    15)
+                    30)
               Marker(
                 point: navController.startPoint!,
                 width: 60,

@@ -155,6 +155,8 @@ class NavigationController extends ChangeNotifier {
 
     _gpsSubscription?.cancel();
 
+    _startCompassTracking();
+
     _gpsSubscription = _locationService.getPositionStream().listen((
       newPosition,
     ) {
