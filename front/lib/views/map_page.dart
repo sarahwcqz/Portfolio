@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-// import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -345,9 +344,10 @@ class _MapPageState extends State<MapPage> {
                 const Distance().as(
                       LengthUnit.Meter,
                       navController.startPoint!,
-                      locationController.currentPosition,
+                      navController.currentLivePosition ??
+                          locationController.currentPosition,
                     ) >
-                    10)
+                    15)
               Marker(
                 point: navController.startPoint!,
                 width: 60,
@@ -393,13 +393,24 @@ class _MapPageState extends State<MapPage> {
   Future<void> _sendReportToBackend(Map<String, dynamic> data) async {
     _showLoader("Envoi du signalement...");
     try {
+      final session = supabase.auth.currentSession;
+      final String? token = session?.accessToken;
+
+      if (token == null) {
+        _hideLoader();
+        _showError("Vous devez être connecté pour signaler un incident.");
+        return;
+      }
       final baseUrl =
           dotenv.env['NGROK_URL'] ?? 'https://default-url.ngrok-free.app';
       //final String baseUrl = 'http://10.0.2.2:8000/api/v1';
       final finalUri = Uri.parse('$baseUrl/reports/');
       final response = await http.post(
         finalUri,
-        headers: {"Content-Type": "application/json"},
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
         body: jsonEncode(data),
       );
 
