@@ -315,18 +315,31 @@ class _MapPageState extends State<MapPage> {
           userAgentPackageName: 'com.example.front',
         ),
         PolylineLayer(
-          polylines: navController.availableRoutes.asMap().entries.map((entry) {
-            int index = entry.key;
-            var route = entry.value;
-            bool isSelected = navController.selectedRouteIndex == index;
-            return Polyline(
-              points: route.points,
-              strokeWidth: isSelected ? 6.0 : 4.0,
-              color: navController
-                  .getRouteColor(route.color)
-                  .withValues(alpha: isSelected ? 1.0 : 0.6),
-            );
-          }).toList(),
+          polylines: navController.availableRoutes
+              .asMap()
+              .entries
+              .where((entry) {
+                // Si on est en navigation, on ne garde QUE l'itinéraire sélectionné
+                if (navController.navigationState.isNavigating) {
+                  return entry.key == navController.selectedRouteIndex;
+                }
+                // Sinon (mode choix), on affiche tout
+                return true;
+              })
+              .map((entry) {
+                int index = entry.key;
+                var route = entry.value;
+                bool isSelected = navController.selectedRouteIndex == index;
+
+                return Polyline(
+                  points: route.points,
+                  strokeWidth: isSelected ? 6.0 : 4.0,
+                  color: navController
+                      .getRouteColor(route.color)
+                      .withValues(alpha: isSelected ? 1.0 : 0.6),
+                );
+              })
+              .toList(),
         ),
         Consumer<ReportController>(
           builder: (context, controller, child) {

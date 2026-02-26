@@ -100,7 +100,7 @@ async def create_danger_zones(
 
     current_pos = Point(start_lng, start_lat)
     destination = Point(dest_lng, dest_lat)
-    SAFETY_THRESHOLD = 0.0015
+    SAFETY_THRESHOLD = 0.0005
 
     report_polygons = []
     for report in reports:
