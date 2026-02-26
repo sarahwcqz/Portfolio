@@ -6,6 +6,7 @@ from supabase import create_client
 from fastapi import APIRouter, Query, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.utils.auth import get_current_user_id
+from datetime import datetime, timezone, timedelta
 
 supabase = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
 
@@ -35,6 +36,13 @@ INCIDENT_RADII = {
     "travaux": 60,
     "test": 50
 }
+
+INCIDENT_DURATIONS = {
+    "accident": 60,
+    "danger": 30,
+    "travaux": 120,
+    "test": 5
+}
 @router.post("/", response_model=List[ReportResponse]) # On s'attend à recevoir une liste ou un objet
 async def create_report(
     report: ReportCreate, 
@@ -47,6 +55,9 @@ async def create_report(
     report_data["user_id"] = user_id
     incident_type = report_data.get("type", "test").lower()
     report_data["radius_meters"] = INCIDENT_RADII.get(incident_type, 50)
+    duration_mins = INCIDENT_DURATIONS.get(incident_type, 15)
+    expire_time = datetime.now(timezone.utc) + timedelta(minutes=duration_mins)
+    report_data["expires_at"] = expire_time.isoformat()
     try:
         response = supabase.table("reports").insert(report_data).execute()
         
@@ -64,3 +75,4 @@ def confirm_report():
 @router.delete("/{id}/delete")
 def delete_report():
     pass
+

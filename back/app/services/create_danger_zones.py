@@ -98,12 +98,24 @@ async def create_danger_zones(
 
     reports = await get_reports_from_DB(min_lat, max_lat, min_lng, max_lng)
 
+    current_pos = Point(start_lng, start_lat)
+    destination = Point(dest_lng, dest_lat)
+    SAFETY_THRESHOLD = 0.0015
+
     report_polygons = []
     for report in reports:
+        report_pt = Point(report['lng'], report['lat'])
+        
+        dist_to_start = current_pos.distance(report_pt)
+        dist_to_dest = destination.distance(report_pt)
+
+        if dist_to_start < SAFETY_THRESHOLD or dist_to_dest < SAFETY_THRESHOLD:
+            continue 
+
         polygon = create_circle_polygon(
             lat=report['lat'],
             lng=report['lng'],
-            radius_meters=report['radius_meters']
+            radius_meters=report.get('radius_meters', 50)
         )
         report_polygons.append(polygon)
 

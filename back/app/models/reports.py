@@ -1,13 +1,12 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-
+from typing import Optional
 
 class ReportCreate(BaseModel):
-    user_id: str
     type: str
     lat: float
     lng: float
-    expires_at: datetime
+    expires_at: Optional[datetime] = None
     
 class ReportResponse(BaseModel):
     id: str     # usefull to confirm or delete report
@@ -15,3 +14,6 @@ class ReportResponse(BaseModel):
     lat: float
     lng: float
     expires_at: datetime
+    radius_meters: int = 50
+
+    model_config = ConfigDict(from_attributes=True)

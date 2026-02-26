@@ -59,10 +59,6 @@ class _MapPageState extends State<MapPage> {
       "type": type.toLowerCase(),
       "lat": position.latitude,
       "lng": position.longitude,
-      "expires_at": DateTime.now()
-          .add(const Duration(minutes: 15))
-          .toUtc()
-          .toIso8601String(),
     };
   }
 
