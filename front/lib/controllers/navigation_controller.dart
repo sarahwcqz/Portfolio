@@ -21,6 +21,7 @@ class NavigationController extends ChangeNotifier {
   List<RouteModel> _availableRoutes = [];
   int? _selectedRouteIndex;
   NavigationState _navigationState = NavigationState.initial();
+  String _preferredRouteId = "avoid";
 
   // REMPLACÉ : Timer par StreamSubscription
   StreamSubscription<LatLng>? _gpsSubscription;
@@ -64,8 +65,11 @@ class NavigationController extends ChangeNotifier {
   }
 
   void selectRoute(int index) {
-    _selectedRouteIndex = index;
-    notifyListeners();
+    if (index >= 0 && index < _availableRoutes.length) {
+      _selectedRouteIndex = index;
+      _preferredRouteId = _availableRoutes[index].routeId;
+      notifyListeners();
+    }
   }
 
   Future<void> calculateRoutes() async {
@@ -192,6 +196,7 @@ class NavigationController extends ChangeNotifier {
 
     if (distanceFromRoute > 30) {
       newDeviationCounter++;
+      // CHANGEMENT : Si on dévie trop, on lance le recalcul intelligent
       if (newDeviationCounter >= 16 && !_isRecalculating) {
         _recalculateRouteAutomatically(currentPosition);
         return;
@@ -200,21 +205,16 @@ class NavigationController extends ChangeNotifier {
       newDeviationCounter = 0;
     }
 
-    // Utilise le way_point exact fourni par ORS
+    // Gestion des index de points pour les instructions
     int pointIndex;
     try {
       final currentInstruction =
           _navigationState.instructions[_navigationState.currentStepIndex];
       final wayPoints = currentInstruction['way_points'] as List<dynamic>;
-      pointIndex = wayPoints[1] as int; // way_points[1] = fin de l'étape
+      pointIndex = wayPoints[1] as int;
 
-      // Sécurité : vérifie que l'index est valide
-      if (pointIndex >= routePoints.length) {
-        pointIndex = routePoints.length - 1;
-      }
+      if (pointIndex >= routePoints.length) pointIndex = routePoints.length - 1;
     } catch (e) {
-      // Fallback sur l'ancienne méthode si way_points n'existe pas
-      debugPrint("way_points non disponible, utilisation approximation");
       pointIndex =
           (_navigationState.currentStepIndex *
           routePoints.length ~/
@@ -228,28 +228,23 @@ class NavigationController extends ChangeNotifier {
       targetPoint,
     );
 
-    // --- SECTION MODIFIÉE POUR L'ARRIVÉE ---
-
+    // Gestion de l'arrivée et des étapes
     if (distance < 25) {
-      // Est-ce qu'on est sur la dernière instruction ?
       bool isLastInstruction =
           _navigationState.currentStepIndex >=
           _navigationState.instructions.length - 1;
 
       if (isLastInstruction) {
-        // CAS 1 : ARRIVÉE FINALE
         _navigationState = _navigationState.copyWith(
           distanceToNextStep: 0,
           distanceFromRoute: distanceFromRoute,
           deviationCounter: 0,
         );
         notifyListeners();
-
         _onArrival?.call();
-        stopNavigation(); // On arrête tout proprement
+        stopNavigation();
         return;
       } else {
-        // CAS 2 : ÉTAPE FRANCHIE (MAIS PAS LA DERNIÈRE)
         _navigationState = _navigationState.copyWith(
           currentStepIndex: _navigationState.currentStepIndex + 1,
           distanceToNextStep: distance,
@@ -259,17 +254,16 @@ class NavigationController extends ChangeNotifier {
         _onStepReached?.call();
       }
     } else {
-      // CAS 3 : ON AVANCE JUSTE SUR LE CHEMIN
       _navigationState = _navigationState.copyWith(
         distanceToNextStep: distance,
         distanceFromRoute: distanceFromRoute,
         deviationCounter: newDeviationCounter,
       );
     }
-
     notifyListeners();
   }
 
+  // --- RECALCUL INTELLIGENT ---
   Future<void> _recalculateRouteAutomatically(LatLng currentPosition) async {
     if (_isRecalculating || _destinationPoint == null) return;
     _isRecalculating = true;
@@ -285,9 +279,17 @@ class NavigationController extends ChangeNotifier {
       );
 
       _availableRoutes = await _routingService.calculateRoutes(request);
-      _selectedRouteIndex = 0;
-      final selectedRoute = _availableRoutes[0];
 
+      // CHANGEMENT : Au lieu de forcer l'index 0, on cherche dynamiquement
+      // la route qui correspond à l'ID préféré de l'utilisateur ('shortest' ou 'avoid')
+      _selectedRouteIndex = _availableRoutes.indexWhere(
+        (r) => r.routeId == _preferredRouteId,
+      );
+
+      // Sécurité : si la route préférée n'existe plus, on prend la première
+      if (_selectedRouteIndex == -1) _selectedRouteIndex = 0;
+
+      final selectedRoute = _availableRoutes[_selectedRouteIndex!];
       final instructions = await _routingService.getInstructions(
         selectedRoute.routeId,
         request,

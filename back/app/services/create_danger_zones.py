@@ -115,7 +115,7 @@ async def create_danger_zones(
         polygon = create_circle_polygon(
             lat=report['lat'],
             lng=report['lng'],
-            radius_meters=report.get('radius_meters', 50)
+            radius_meters=report.get('radius_meters') or 50
         )
         report_polygons.append(polygon)
 
