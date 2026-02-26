@@ -1,29 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/route_request_model.dart';
 import '../models/route_model.dart';
+import '../config/app_config.dart';
 
 class RoutingService {
-  // change for environement
-  // true  = téléphone réel (ngrok)
-  // false = émulateur Android
-  static const bool _isPhysicalDevice = true;
+  final String _baseUrl = AppConfig.baseUrl;
 
-  String get _baseUrl => _isPhysicalDevice
-      ? (dotenv.env['NGROK_URL'] ??
-            'http://10.0.2.2:8000/api/v1') // adress for test with ngrok
-      : 'http://10.0.2.2:8000/api/v1'; // adress for test with emulator
-
-  Map<String, String> get _headers => _isPhysicalDevice
-      ? {
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true', // OBLIGATOIRE pour ngrok
-        }
-      : {
-          'Content-Type': 'application/json', // for emulator
-        };
+  Map<String, String> get _headers => {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
 
   // --------------------------- send route to back -----------------------------
   Future<List<RouteModel>> calculateRoutes(RouteRequest request) async {

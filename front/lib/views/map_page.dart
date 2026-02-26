@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -17,6 +16,7 @@ import 'widgets/map_floating_buttons.dart';
 import 'widgets/map_reports_layer.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../config/app_config.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -413,9 +413,7 @@ class _MapPageState extends State<MapPage> {
         _showError("Vous devez être connecté pour signaler un incident.");
         return;
       }
-      final baseUrl =
-          dotenv.env['NGROK_URL'] ?? 'https://default-url.ngrok-free.app';
-      //final String baseUrl = 'http://10.0.2.2:8000/api/v1';
+      final String baseUrl = AppConfig.baseUrl;
       final finalUri = Uri.parse('$baseUrl/reports/');
       final response = await http.post(
         finalUri,

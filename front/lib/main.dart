@@ -32,15 +32,12 @@ Future<void> main() async {
 // alias to use 'supabase'
 final supabase = Supabase.instance.client;
 
-
-
 // ---------------------------------------------- ROOT WIDGET -------------------------------------------------------------
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthController()),
