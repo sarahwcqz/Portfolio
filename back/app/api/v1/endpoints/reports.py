@@ -1,26 +1,17 @@
-from fastapi import APIRouter, Query, Depends
+from fastapi import APIRouter, Query, Depends, HTTPException
 from typing import List
-from app.services.get_reports import get_reports_in_bbox
 from app.models.reports import ReportCreate, ReportResponse
 from app.config import settings
 from supabase import create_client
-from fastapi import APIRouter, Query, Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from app.utils.auth import get_current_user_id
 from datetime import datetime, timezone, timedelta
-
-supabase = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
-# to restart timestamp
-from datetime import datetime, timezone
-from app.config import settings
-from supabase import create_client
+from app.utils.auth import get_current_user_id
+from app.services.get_reports import get_reports_in_bbox
 from app.utils.report_expiration import get_expiration_date
 from app.utils.report_validations import (
     check_user_exists,
     check_report_exists,
     check_user_has_not_voted
 )
-from app.utils.auth import get_current_user_id
 
 
 router = APIRouter(prefix="/reports", tags=["reports"])
