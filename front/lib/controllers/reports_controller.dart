@@ -16,6 +16,23 @@ class ReportController extends ChangeNotifier {
   List<ReportModel> get reports => _reports;
   bool get isLoading => _isLoading;
 
+  Future<bool> addReport(Map<String, dynamic> data) async {
+    _isLoading = true;
+    notifyListeners(); // On prévient l'UI qu'on travaille
+
+    try {
+      // On demande au service de faire la requête HTTP
+      final success = await _service.createReport(data);
+      return success;
+    } catch (e) {
+      debugPrint('Erreur Controller addReport: $e');
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners(); // On a fini
+    }
+  }
+
   // ─── Appelé à chaque mouvement de carte ───────────────────────
   void onMapMoved(MapCamera camera) {
     debugPrint('onMapMoved appelé'); // DEBUG

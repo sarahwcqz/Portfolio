@@ -40,8 +40,8 @@ INCIDENT_RADII = {
 INCIDENT_DURATIONS = {
     "permanent": timedelta(days=150),
     "travaux": timedelta(days=5),
-    "dégradation de la voie": timedelta(days=90),
-    "obstruction de la voie": timedelta(hours=2)
+    "dégradation": timedelta(days=90),
+    "obstruction": timedelta(hours=2)
 }
 @router.post("/", response_model=List[ReportResponse]) # On s'attend à recevoir une liste ou un objet
 async def create_report(

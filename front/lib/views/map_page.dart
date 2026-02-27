@@ -14,9 +14,8 @@ import 'widgets/map_navigation_banner.dart';
 import 'widgets/map_route_cards.dart';
 import 'widgets/map_floating_buttons.dart';
 import 'widgets/map_reports_layer.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import '../config/app_config.dart';
+import 'widgets/incident_report_sheet.dart';
+import 'widgets/context_alerts.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -28,21 +27,13 @@ class MapPage extends StatefulWidget {
 class _MapPageState extends State<MapPage> {
   final MapController _mapController = MapController();
 
-  final supabase = Supabase.instance.client;
-
   void _handleReportButtonPressed() {
-    final user = supabase.auth.currentUser;
+    final user = Supabase.instance.client.auth.currentUser;
 
     if (user != null) {
-      // Étape 3 : On ouvre l'interface (UI)
       _showReportModal(user.id);
     } else {
-      // Petit message d'erreur si pas connecté
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Connectez-vous pour signaler un incident !"),
-        ),
-      );
+      context.showError("Connectez-vous pour signaler un incident !");
     }
   }
 
@@ -82,8 +73,9 @@ class _MapPageState extends State<MapPage> {
     navController.setMapController(_mapController);
 
     final success = await locationController.determinePosition();
+    if (!mounted) return;
     if (!success) {
-      _showError("Erreur GPS - Vérifiez les permissions");
+      context.showError("Erreur GPS - Vérifiez les permissions");
       return;
     }
     navController.setStartPoint(
@@ -103,7 +95,7 @@ class _MapPageState extends State<MapPage> {
         }
         if (mounted) setState(() {});
       },
-      onError: (message) => _showError(message),
+      onError: (message) => context.showError(message),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ReportController>().onMapMoved(_mapController.camera);
@@ -117,6 +109,7 @@ class _MapPageState extends State<MapPage> {
     final controller = context.read<LocationController>();
     final navController = context.read<NavigationController>();
     await controller.determinePosition();
+    if (!mounted) return;
     double targetZoom = navController.navigationState.isNavigating
         ? 17.0
         : 15.0;
@@ -130,14 +123,16 @@ class _MapPageState extends State<MapPage> {
 
   Future<void> _onCalculateRoutesPressed() async {
     final navController = context.read<NavigationController>();
-    _showMessage("Calcul en cours...");
+    context.showMessage("Calcul en cours...");
     try {
       await navController.calculateRoutes();
-      _showMessage(
+      if (!mounted) return;
+      context.showMessage(
         "${navController.availableRoutes.length} itinéraires trouvés !",
       );
     } catch (e) {
-      _showError(e.toString());
+      if (!mounted) return;
+      context.showError(e.toString());
     }
   }
 
@@ -145,20 +140,23 @@ class _MapPageState extends State<MapPage> {
     final navController = context.read<NavigationController>();
     final locationController = context.read<LocationController>();
 
-    _showLoader("Chargement du guidage...");
+    context.showLoader("Chargement du guidage...");
 
     try {
       await navController.startNavigation(
-        onStepReached: () => _showMessage("Étape suivante"),
-        onArrival: () => _showSuccess("Vous êtes arrivé !"),
-        onRecalculating: () => _showMessage("Recalcul de l'itinéraire..."),
+        onStepReached: () => context.showMessage("Étape suivante"),
+        onArrival: () => context.showSuccess("Vous êtes arrivé !"),
+        onRecalculating: () =>
+            context.showMessage("Recalcul de l'itinéraire..."),
       );
-      _hideLoader();
+      if (!mounted) return;
+      context.hideLoader();
       _mapController.move(locationController.currentPosition, 17.0);
-      _showMessage("Navigation démarrée");
+      context.showMessage("Navigation démarrée");
     } catch (e) {
-      _hideLoader();
-      _showError(e.toString());
+      if (!mounted) return;
+      context.hideLoader();
+      context.showError(e.toString());
     }
   }
 
@@ -174,6 +172,7 @@ class _MapPageState extends State<MapPage> {
         ),
       ),
     );
+    if (!mounted) return;
 
     if (result != null) {
       final address = result.isCurrentPosition
@@ -192,48 +191,6 @@ class _MapPageState extends State<MapPage> {
       });
     }
   }
-
-  void _showMessage(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  void _showError(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
-    );
-  }
-
-  void _showSuccess(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.green),
-    );
-  }
-
-  void _showLoader(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            const SizedBox(width: 16),
-            Text(message),
-          ],
-        ),
-        duration: const Duration(seconds: 30),
-      ),
-    );
-  }
-
-  void _hideLoader() => ScaffoldMessenger.of(context).clearSnackBars();
 
   @override
   Widget build(BuildContext context) {
@@ -403,41 +360,24 @@ class _MapPageState extends State<MapPage> {
   }
 
   Future<void> _sendReportToBackend(Map<String, dynamic> data) async {
-    _showLoader("Envoi du signalement...");
+    context.showLoader("Envoi du signalement...");
+
     try {
-      final session = supabase.auth.currentSession;
-      final String? token = session?.accessToken;
+      final success = await context.read<ReportController>().addReport(data);
 
-      if (token == null) {
-        _hideLoader();
-        _showError("Vous devez être connecté pour signaler un incident.");
-        return;
-      }
-      final String baseUrl = AppConfig.baseUrl;
-      final finalUri = Uri.parse('$baseUrl/reports/');
-      final response = await http.post(
-        finalUri,
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer $token",
-        },
-        body: jsonEncode(data),
-      );
+      if (!mounted) return;
+      context.hideLoader();
 
-      _hideLoader();
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        _showSuccess("Signalement enregistré !");
-        // On rafraîchit la carte pour voir le point immédiatement
-        if (mounted) {
-          context.read<ReportController>().onMapMoved(_mapController.camera);
-        }
+      if (success) {
+        context.showSuccess("Signalement enregistré !");
+        context.read<ReportController>().onMapMoved(_mapController.camera);
       } else {
-        _showError("Erreur serveur : ${response.statusCode}");
+        context.showError("Erreur lors de l'envoi");
       }
     } catch (e) {
-      _hideLoader();
-      _showError("Impossible de contacter le serveur");
+      if (!mounted) return;
+      context.hideLoader();
+      context.showError("Impossible de contacter le serveur");
     }
   }
 
@@ -446,103 +386,12 @@ class _MapPageState extends State<MapPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
-        ),
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-          top: 15,
-          left: 20,
-          right: 20,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[600],
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              "Quel incident voulez-vous signaler ?",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 25),
-            GridView.count(
-              shrinkWrap: true,
-              crossAxisCount: 2,
-              mainAxisSpacing: 15,
-              crossAxisSpacing: 15,
-              childAspectRatio: 1.5,
-              children: [
-                _buildReportOption(
-                  userId,
-                  'travaux',
-                  Icons.construction,
-                  Colors.orange,
-                ),
-                _buildReportOption(
-                  userId,
-                  'accident',
-                  Icons.warning,
-                  Colors.red,
-                ),
-                _buildReportOption(
-                  userId,
-                  'danger',
-                  Icons.dangerous,
-                  Colors.redAccent,
-                ),
-                _buildReportOption(
-                  userId,
-                  'test',
-                  Icons.bug_report,
-                  Colors.purple,
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildReportOption(
-    String userId,
-    String type,
-    IconData icon,
-    Color color,
-  ) {
-    return InkWell(
-      onTap: () {
-        final data = _createReportData(userId: userId, type: type);
-        Navigator.pop(context);
-        _sendReportToBackend(data);
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: color.withValues(alpha: 0.5)),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 35),
-            const SizedBox(height: 8),
-            Text(
-              type.toUpperCase(),
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-            ),
-          ],
-        ),
+      builder: (context) => IncidentReportSheet(
+        onReportSelected: (type) {
+          Navigator.pop(context);
+          final data = _createReportData(userId: userId, type: type);
+          _sendReportToBackend(data);
+        },
       ),
     );
   }
