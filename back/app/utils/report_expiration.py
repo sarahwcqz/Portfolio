@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta, timezone
 
 EXPIRATION_DURATIONS = {
-    "accident": timedelta(hours=2),
-    "travaux": timedelta(days=7),
-    "danger": timedelta(hours=24),
-    "test": timedelta(hours=1),
+    "permanent": timedelta(days=150),
+    "travaux": timedelta(days=5),
+    "dégradation": timedelta(days=90),
+    "obstruction": timedelta(hours=2),
 }
 
 DEFAULT_DURATION = timedelta(hours=3)

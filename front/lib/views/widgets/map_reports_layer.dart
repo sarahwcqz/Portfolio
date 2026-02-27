@@ -3,7 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:latlong2/latlong.dart';
 import '../../models/reports_model.dart';
-import 'report_action_dialog.dart';
+import 'report_validation_dialog.dart';
 
 class MapReportLayer extends StatelessWidget {
   final List<ReportModel> reports;
@@ -72,21 +72,21 @@ class MapReportLayer extends StatelessWidget {
         return ReportConfirmationDialog(report: report);
       },
     );
-  }
+  } 
 
   Widget _buildIcon(String type) {
     switch (type.toLowerCase()) {
       // DEBUG (a changer en fct du choix de Leo)
-      case 'accident':
-        return const Icon(Icons.warning, color: Colors.red, size: 30);
+      case 'permanent':
+        return const Icon(Icons.stairs, color: Colors.purple, size: 30);
       case 'travaux':
         return const Icon(Icons.construction, color: Colors.orange, size: 30);
-      case 'danger':
-        return const Icon(Icons.dangerous, color: Colors.red, size: 30);
-      case 'test':
-        return const Icon(Icons.bug_report, color: Colors.purple, size: 30);
+      case 'dégradation':
+        return const Icon(Icons.warning, color: Colors.blue, size: 30);
+      case 'obstruction':
+        return const Icon(Icons.block, color: Colors.red, size: 30);  // accessible | block | accessible_forward
       default:
-        return const Icon(Icons.info, color: Colors.blue, size: 30);
+        return const Icon(Icons.info, color: Colors.yellow, size: 30);
     }
   }
 }

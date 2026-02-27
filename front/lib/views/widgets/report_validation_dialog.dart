@@ -158,25 +158,25 @@ class _ReportConfirmationDialogState extends State<ReportConfirmationDialog> {
     Color color;
 
     switch (type.toLowerCase()) {
-      case 'accident':
-        iconData = Icons.warning;
-        color = Colors.red;
+      case 'permanent':
+        iconData = Icons.stairs;
+        color = Colors.purple;
         break;
       case 'travaux':
         iconData = Icons.construction;
         color = Colors.orange;
         break;
-      case 'danger':
-        iconData = Icons.dangerous;
-        color = Colors.red;
+      case 'dégradation':
+        iconData = Icons.warning;
+        color = Colors.blue;
         break;
-      case 'test':
-        iconData = Icons.bug_report;
-        color = Colors.purple;
+      case 'obstruction':
+        iconData = Icons.block;
+        color = Colors.red;
         break;
       default:
         iconData = Icons.info;
-        color = Colors.blue;
+        color = Colors.yellow;
     }
 
     return Icon(iconData, size: 60, color: color);
@@ -185,14 +185,14 @@ class _ReportConfirmationDialogState extends State<ReportConfirmationDialog> {
   // ----------------------------------- title -------------------------------
   String _getTitle(String type) {
     switch (type.toLowerCase()) {
-      case 'accident':
-        return "Accident";
+      case 'permanent':
+        return "Problème permanent (escaliers...)";
       case 'travaux':
         return "Travaux";
-      case 'danger':
-        return "Danger";
-      case 'test':
-        return "Test";
+      case 'dégradation de la voie':
+        return "Dégradation de la voie (trous...)";
+      case 'obstruction de la voie':
+        return "Obstruction de la voie (poubelle, voiture...)";
       default:
         return "Signalement";
     }
