@@ -5,7 +5,8 @@ from typing import Dict, List, Optional
 # to decode polyline into -> geometry (to get the points of routes)
 import polyline
 from shapely.geometry import Polygon, MultiPolygon, mapping
-
+from fastapi import HTTPException
+import traceback
 
 # ========================================== var ====================================
 
@@ -54,35 +55,46 @@ async def get_route(
             "avoid_polygons": mapping(multi_polygons)
         }
 
-    #API call to ORS
-    async with httpx.AsyncClient(timeout=30) as client:
-        response = await client.post(ORS_URL, json=body, headers=headers)
-        response.raise_for_status()         # a comprendre
-        # /!\ return distance : meters, duration : seconds
-        ORS_data = response.json()
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.post(ORS_URL, json=body, headers=headers)
+            
+            if response.status_code != 200:
+                print(f" ERREUR ORS DÉTECTÉE | Statut: {response.status_code}")
+                print(f" Message ORS: {response.text}")
+                response.raise_for_status()
 
-    route_info = ORS_data['routes'][0]
-    decoded_coord = polyline.decode(route_info['geometry'])
-    coordinates = [{"lat": lat, "lng": long} for lat, long in decoded_coord]
+            ORS_data = response.json()
 
-    result = {
-    "coordinates": coordinates,
-    "duration": route_info['summary']['duration'],
-    "distance": route_info['summary']['distance'],
-}
+        route_info = ORS_data['routes'][0]
+        decoded_coord = polyline.decode(route_info['geometry'])
+        coordinates = [{"lat": lat, "lng": long} for lat, long in decoded_coord]
 
-# AJOUT : Instructions si demandées
-    if with_instructions:
-        steps = route_info['segments'][0]['steps']
-        result["instructions"] = [
-            {
-                "step": idx + 1,
-                "instruction": step['instruction'],
-                "distance": step['distance'],
-                "duration": step['duration'],
-                "way_points": step['way_points'],
-            }
-            for idx, step in enumerate(steps)
-        ]
+        result = {
+        "coordinates": coordinates,
+        "duration": route_info['summary']['duration'],
+        "distance": route_info['summary']['distance'],
+    }
 
-    return result
+        if with_instructions:
+            steps = route_info['segments'][0]['steps']
+            result["instructions"] = [
+                {
+                    "step": idx + 1,
+                    "instruction": step['instruction'],
+                    "distance": step['distance'],
+                    "duration": step['duration'],
+                    "way_points": step['way_points'],
+                }
+                for idx, step in enumerate(steps)
+            ]
+        return result
+
+    except httpx.HTTPStatusError as e:
+        print(f" Erreur HTTP : {e.response.status_code} - {e.response.text}")
+        raise HTTPException(status_code=e.response.status_code, detail="Erreur venant d'ORS")
+
+    except Exception as e:
+        print(" Erreur dans le back:")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
