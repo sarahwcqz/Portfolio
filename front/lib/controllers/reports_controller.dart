@@ -4,9 +4,11 @@ import 'package:flutter_map/flutter_map.dart';
 import '../models/reports_model.dart';
 import '../models/bounding_box_model.dart';
 import '../services/reports_service.dart';
+import '../services/report_action_service.dart';
 
 class ReportController extends ChangeNotifier {
   final ReportService _service = ReportService();
+  final ReportActionService _actionService = ReportActionService();
 
   List<ReportModel> _reports = [];
   bool _isLoading = false;
@@ -33,7 +35,12 @@ class ReportController extends ChangeNotifier {
     }
   }
 
-  // ─── Appelé à chaque mouvement de carte ───────────────────────
+
+  // ============================================== get reports to be visible on map ==========================
+  // ==========================================================================================================
+
+
+  // ------------------------------ when map moved -------------------------------
   void onMapMoved(MapCamera camera) {
     debugPrint('onMapMoved appelé'); // DEBUG
 
@@ -42,41 +49,39 @@ class ReportController extends ChangeNotifier {
       'bbox: ${bbox.minLat}, ${bbox.maxLat}, ${bbox.minLng}, ${bbox.maxLng}',
     ); // DEBUG
 
-    // Ignore si le mouvement est trop petit
+    // if mvmt too small, ignore
     if (!bbox.hasSignificantlyChangedFrom(_lastBoundingBox)) {
-      debugPrint('Changement ignoré car trop insignifiant'); //
+      debugPrint('Changement ignoré car trop insignifiant'); // DEBUG
       return;
     }
 
-    // Reset le timer à chaque mouvement
+    // Reset timer when mvmt
     _debounceTimer?.cancel();
 
-    // Lance la requête après 500ms d'inactivité
+    // request after 500 ms
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
       _loadReports(bbox);
     });
   }
 
-  // ─── Chargement depuis le back ─────────────────────────────────
+  // ------------------------------ load reports visible ---------------------------------
   Future<void> _loadReports(BoundingBox bbox) async {
     _isLoading = true;
     _lastBoundingBox = bbox;
     notifyListeners();
 
     try {
-      // On récupère tous les rapports via le service
       final allReports = await _service.getReportsInBoundingBox(bbox);
 
-      // MODIFICATION : FILTRAGE PAR DATE UTC
+      // making sure to return reports that aren't expired // DEBUG, to be removed?
       final nowUtc = DateTime.now().toUtc();
 
       _reports = allReports.where((r) {
-        // On vérifie si l'expiration est bien dans le futur par rapport à l'UTC
         final isValid = r.expiresAt.isAfter(nowUtc);
 
         if (!isValid) {
           debugPrint('DEBUG: Signalement ${r.type} ignoré car expiré (UTC)');
-        }
+        } //DEBUG
         return isValid;
       }).toList();
 
@@ -90,7 +95,7 @@ class ReportController extends ChangeNotifier {
     }
   }
 
-  // ─── Extrait la bounding box depuis la caméra Flutter Map ──────
+  // ------------------------------- get visible bounding box from Flutter Map ----------------
   BoundingBox _getBoundingBoxFromCamera(MapCamera camera) {
     final bounds = camera.visibleBounds;
     return BoundingBox(
@@ -106,4 +111,62 @@ class ReportController extends ChangeNotifier {
     _debounceTimer?.cancel();
     super.dispose();
   }
+
+
+
+  // =================================== confirm / infirm report =======================================
+  // ====================================================================================================
+
+  // -------------------------------------- CONFIRM ----------------------------------------------------
+
+  Future<String> confirmReport(String reportId) async {
+    try {
+      await _actionService.confirmReport(reportId);
+      
+      // Reload reports  // DEBUG ; interet?
+      if (_lastBoundingBox != null) {
+        await _loadReports(_lastBoundingBox!);
+      }
+      
+      return "Merci pour votre contribution !";
+    } catch (e) {
+      if (e.toString().contains('400')) {
+        return "Vous avez déjà voté pour ce signalement, merci.";
+      } else if (e.toString().contains('404')) {
+        return "Signalement introuvable";
+      } else if (e.toString().contains('401')) {
+        return "Session expirée, reconnectez-vous";   // DEBUG : possible?
+      } else {
+        return "Erreur : ${e.toString()}";
+      }
+    }
+  }
+
+  // -------------------------------------- INFIRM -----------------------------------------------------
+
+  Future<String> infirmReport(String reportId) async {
+    try {
+      await _actionService.infirmReport(reportId);
+      
+      // Reload reports // DEBUG
+      if (_lastBoundingBox != null) {
+        await _loadReports(_lastBoundingBox!);
+      }
+      
+      return "Merci pour votre contribution !";
+    } catch (e) {
+      if (e.toString().contains('400')) {
+        return "Vous avez déjà voté pour ce signalement";
+      } else if (e.toString().contains('404')) {
+        return "Signalement introuvable";
+      } else if (e.toString().contains('401')) {
+        return "Session expirée, reconnectez-vous";   // DEBUG
+      } else {
+        return "Erreur : ${e.toString()}";
+      }
+    }
+  }
+
 }
+
+
