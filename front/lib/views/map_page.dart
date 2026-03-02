@@ -16,6 +16,9 @@ import 'widgets/map_floating_buttons.dart';
 import 'widgets/map_reports_layer.dart';
 import 'widgets/incident_report_sheet.dart';
 import 'widgets/context_alerts.dart';
+import 'widgets/sos_button.dart';
+import 'widgets/emergency_contact_onboarding_dialog.dart';
+import '../services/emergency_contact_service.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -26,6 +29,7 @@ class MapPage extends StatefulWidget {
 
 class _MapPageState extends State<MapPage> {
   final MapController _mapController = MapController();
+  final EmergencyContactService _emergencyService = EmergencyContactService();
 
   void _handleReportButtonPressed() {
     final user = Supabase.instance.client.auth.currentUser;
@@ -57,12 +61,37 @@ class _MapPageState extends State<MapPage> {
   void initState() {
     super.initState();
     _initializeMap();
+    _checkEmergencyOnboarding();
   }
 
   @override
   void dispose() {
     super.dispose();
   }
+
+  // ================================================================================
+  // ============================== FUNCTIONS =======================================
+  // ================================================================================
+
+
+  // --------------------------------- checkEmergencyOnboarding ---------------------
+  Future<void> _checkEmergencyOnboarding() async {
+    final hasSeenOnboarding = await _emergencyService.hasSeenOnboarding();
+
+    if (!hasSeenOnboarding && mounted) {
+      // wait for map to be visible (2 secondes)
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const EmergencyContactOnboardingDialog(),
+          );
+        }
+      });
+    }
+  }
+  // ---------------------------------------------------------------------------------
 
   bool _isFollowMode = true;
 
@@ -232,6 +261,7 @@ class _MapPageState extends State<MapPage> {
                 onStartNavigation: _onStartNavigationPressed,
                 onReportIncident: _handleReportButtonPressed,
               ),
+              const SosButton(),
             ],
           );
         },
