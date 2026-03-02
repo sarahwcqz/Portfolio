@@ -88,50 +88,111 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Récupère les dimensions de l'écran
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    
+    // Calcule des tailles adaptatives
+    final logoSize = screenWidth * 0.5; // 50% de la largeur
+    final maxLogoSize = 250.0;
+    final actualLogoSize = logoSize > maxLogoSize ? maxLogoSize : logoSize;
+    
+    final horizontalPadding = screenWidth * 0.05; // 5% de padding
+    final maxWidth = 400.0; // Largeur max pour grands écrans
+
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              'assets/images/logoAllygo.png',
-              width: 250,
-              height: 250,
-            ),
-            const SizedBox(height: 30),
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(labelText: 'Email'),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            TextField(
-              controller: _passwordController,
-              decoration: const InputDecoration(labelText: 'Mot de passe'),
-              obscureText: true,
-            ),
-            const SizedBox(height: 20),
-            Consumer<AuthController>(
-              builder: (context, controller, child) {
-                if (controller.isLoading) {
-                  return const CircularProgressIndicator();
-                }
-                return Column(
-                  children: [
-                    ElevatedButton(
-                      onPressed: _signIn,
-                      child: const Text('Se connecter'),
+      body: SafeArea(  // ← Évite les notchs/barres système
+        child: Center(  // ← Centre tout le contenu
+          child: SingleChildScrollView(  // ← Permet le scroll si clavier ouvert
+            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),  // ← Largeur max sur tablette
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Logo adaptatif
+                  Image.asset(
+                    'assets/images/Logo_NOVI.png',
+                    width: actualLogoSize,
+                    height: actualLogoSize,
+                  ),
+                  
+                  SizedBox(height: screenHeight * 0.04),  // ← Espace adaptatif (4% hauteur)
+                  
+                  // Champ email
+                  TextField(
+                    controller: _emailController,
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.email),
                     ),
-                    TextButton(
-                      onPressed: _signUp,
-                      child: const Text('Créer un compte'),
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  
+                  SizedBox(height: screenHeight * 0.02),  // ← 2% hauteur
+                  
+                  // Champ mot de passe
+                  TextField(
+                    controller: _passwordController,
+                    decoration: const InputDecoration(
+                      labelText: 'Mot de passe',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.lock),
                     ),
-                  ],
-                );
-              },
+                    obscureText: true,
+                  ),
+                  
+                  SizedBox(height: screenHeight * 0.03),  // ← 3% hauteur
+                  
+                  // Boutons
+                  Consumer<AuthController>(
+                    builder: (context, controller, child) {
+                      if (controller.isLoading) {
+                        return const CircularProgressIndicator();
+                      }
+                      return Column(
+                        children: [
+                          // Bouton Se connecter (largeur adaptative)
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: _signIn,
+                              style: ElevatedButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: const Text(
+                                'Se connecter',
+                                style: TextStyle(fontSize: 16),
+                              ),
+                            ),
+                          ),
+                          
+                          const SizedBox(height: 12),
+                          
+                          // Bouton Créer un compte
+                          SizedBox(
+                            width: double.infinity,
+                            child: TextButton(
+                              onPressed: _signUp,
+                              child: const Text(
+                                'Créer un compte',
+                                style: TextStyle(fontSize: 16),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
-          ],
+          ),
         ),
       ),
     );
