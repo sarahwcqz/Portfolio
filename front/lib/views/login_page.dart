@@ -88,39 +88,39 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Récupère les dimensions de l'écran
+    // Gets screen's size
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     
-    // Calcule des tailles adaptatives
-    final logoSize = screenWidth * 0.5; // 50% de la largeur
+    // calculates sizes to be adaptative
+    final logoSize = screenWidth * 0.5;
     final maxLogoSize = 250.0;
     final actualLogoSize = logoSize > maxLogoSize ? maxLogoSize : logoSize;
     
-    final horizontalPadding = screenWidth * 0.05; // 5% de padding
-    final maxWidth = 400.0; // Largeur max pour grands écrans
+    final horizontalPadding = screenWidth * 0.05;
+    final maxWidth = 400.0;
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: SafeArea(  // ← Évite les notchs/barres système
-        child: Center(  // ← Centre tout le contenu
-          child: SingleChildScrollView(  // ← Permet le scroll si clavier ouvert
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(  // allow scroll 
             padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
             child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: maxWidth),  // ← Largeur max sur tablette
+              constraints: BoxConstraints(maxWidth: maxWidth),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Logo adaptatif
+                  // ------------------------------------- LOGO
                   Image.asset(
                     'assets/images/Logo_NOVI.png',
                     width: actualLogoSize,
                     height: actualLogoSize,
                   ),
                   
-                  SizedBox(height: screenHeight * 0.04),  // ← Espace adaptatif (4% hauteur)
+                  SizedBox(height: screenHeight * 0.04),
                   
-                  // Champ email
+                  // --------------------------------------- email
                   TextField(
                     controller: _emailController,
                     decoration: const InputDecoration(
@@ -131,9 +131,9 @@ class _LoginPageState extends State<LoginPage> {
                     keyboardType: TextInputType.emailAddress,
                   ),
                   
-                  SizedBox(height: screenHeight * 0.02),  // ← 2% hauteur
+                  SizedBox(height: screenHeight * 0.02),
                   
-                  // Champ mot de passe
+                  // --------------------------------------- pwd
                   TextField(
                     controller: _passwordController,
                     decoration: const InputDecoration(
@@ -144,7 +144,7 @@ class _LoginPageState extends State<LoginPage> {
                     obscureText: true,
                   ),
                   
-                  SizedBox(height: screenHeight * 0.03),  // ← 3% hauteur
+                  SizedBox(height: screenHeight * 0.03),
                   
                   // Boutons
                   Consumer<AuthController>(
@@ -154,7 +154,7 @@ class _LoginPageState extends State<LoginPage> {
                       }
                       return Column(
                         children: [
-                          // Bouton Se connecter (largeur adaptative)
+                          // ---------------------------------- se connecter button
                           SizedBox(
                             width: double.infinity,
                             height: 50,
@@ -174,7 +174,7 @@ class _LoginPageState extends State<LoginPage> {
                           
                           const SizedBox(height: 12),
                           
-                          // Bouton Créer un compte
+                          // ------------------------------------- creer un compte button
                           SizedBox(
                             width: double.infinity,
                             child: TextButton(
