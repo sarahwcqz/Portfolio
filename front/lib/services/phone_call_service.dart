@@ -1,7 +1,7 @@
 import 'package:url_launcher/url_launcher.dart';
 
 class PhoneCallService {
-  static const String SAMU = '15';
+  static const String SAMU = '112';
 
   // ----------------------- makeCall ------------------------------
   // either SAMU or contact

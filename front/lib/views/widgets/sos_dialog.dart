@@ -66,7 +66,7 @@ class _SosDialogState extends State<SosDialog> {
                   // ----------------------- SAMU
                   _buildCallButton(
                     icon: Icons.local_hospital,
-                    label: "SAMU (15)",
+                    label: "SAMU (112)",
                     subtitle: "Urgence médicale",
                     color: Colors.red,
                     onPressed: () async {

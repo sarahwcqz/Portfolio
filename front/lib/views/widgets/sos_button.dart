@@ -7,14 +7,21 @@ class SosButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {    // DEBUG to be changed
     return Positioned(
-      top: 120,
       right: 16,
+      top: MediaQuery.of(context).size.height / 2 - 28,
       child: FloatingActionButton(
         heroTag: "sos",
         onPressed: () => _showSosDialog(context),
         backgroundColor: Colors.red,
         foregroundColor: Colors.white,
-        child: const Icon(Icons.warning, size: 30),
+        child: const Text(
+          'SOS',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
       ),
     );
   }
