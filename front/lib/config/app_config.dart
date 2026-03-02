@@ -4,7 +4,9 @@ class AppConfig {
   static String get baseUrl {
     final mode = dotenv.env['APP_MODE'] ?? 'emulator';
 
-    if (mode == 'device') {
+    if (mode == 'prod') {
+      return dotenv.env['RENDER_URL'] ?? '';
+    } else if (mode == 'device') {
       return dotenv.env['NGROK_URL'] ?? '';
     } else {
       return dotenv.env['API_URL_EMULATOR'] ?? 'http://10.0.2.2:8000/api/v1';
