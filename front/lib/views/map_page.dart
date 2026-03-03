@@ -16,6 +16,7 @@ import 'widgets/map_floating_buttons.dart';
 import 'widgets/map_reports_layer.dart';
 import 'widgets/incident_report_sheet.dart';
 import 'widgets/context_alerts.dart';
+import 'widgets/heading_pointer.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -250,6 +251,10 @@ class _MapPageState extends State<MapPage> {
         initialZoom: 13.0,
         minZoom: 10.0,
         maxZoom: 18.0,
+        initialRotation: 0.0,
+        interactionOptions: const InteractionOptions(
+          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+        ),
         // --------------------------- if mouvement on map -----------------
         onMapEvent: (event) {
           if (event.source == MapEventSource.onDrag ||
@@ -338,19 +343,38 @@ class _MapPageState extends State<MapPage> {
               point:
                   navController.currentLivePosition ??
                   locationController.currentPosition,
-              width: 60,
-              height: 60,
-              child: Transform.rotate(
-                angle:
-                    navController.navigationState.currentHeading *
-                    (3.14159 / 180),
-                child: Icon(
-                  navController.navigationState.isNavigating
-                      ? Icons.navigation
-                      : Icons.my_location,
-                  color: Colors.blue,
-                  size: 40,
-                ),
+              width: 120,
+              height: 120,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Transform.rotate(
+                    angle:
+                        navController.navigationState.currentHeading *
+                        (3.14159 / 180),
+                    child: SizedBox(
+                      width: 120,
+                      height: 120,
+                      child: CustomPaint(painter: HeadingShadowPainter()),
+                    ),
+                  ),
+                  Container(
+                    width: 18,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      color: Colors.blueAccent,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

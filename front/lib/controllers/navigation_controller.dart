@@ -319,9 +319,9 @@ class NavigationController extends ChangeNotifier {
       lastHeading = heading;
       _navigationState = _navigationState.copyWith(currentHeading: heading);
 
-      if (_mapController != null) {
-        _mapController!.rotate(-heading);
-      }
+      //if (_mapController != null) {
+      //  _mapController!.rotate(-heading);
+      //}
       notifyListeners();
     });
   }
