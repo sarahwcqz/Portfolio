@@ -146,7 +146,7 @@ class _LoginPageState extends State<LoginPage> {
                   
                   SizedBox(height: screenHeight * 0.03),
                   
-                  // Boutons
+                  // --------------------------------- BUTTONS --------------
                   Consumer<AuthController>(
                     builder: (context, controller, child) {
                       if (controller.isLoading) {
