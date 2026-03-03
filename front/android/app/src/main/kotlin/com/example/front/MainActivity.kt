@@ -1,4 +1,4 @@
-package com.example.front
+package com.novi.app
 
 import io.flutter.embedding.android.FlutterActivity
 
