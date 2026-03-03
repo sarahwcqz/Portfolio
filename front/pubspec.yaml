@@ -60,7 +60,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
-  #pour sauvegarder le mail de l user--------------------------nouveau
+  #to save user's mail + emergency contact
   shared_preferences: ^2.5.4
 
   #pour avoir des erreur precise sans catch e par exemple a la place des print
@@ -75,6 +75,15 @@ dependencies:
   # for don't stop ecran
   wakelock_plus: ^1.4.0
   flutter_map_marker_cluster: ^8.2.2
+
+  # for contact selector
+  flutter_contacts: ^1.1.9
+
+  # phone calls
+  url_launcher: ^6.3.2
+
+  # contact permissions
+  permission_handler: ^12.0.1
 
 dev_dependencies:
   flutter_test:

@@ -74,13 +74,7 @@ async def create_report(
     except Exception as e:
         print(f" Erreur lors de l'insertion Supabase : {e}")
         raise HTTPException(status_code=500, detail=str(e))
-# ------------------------------ PUT / PATCH ? confirm a report (restart timestamp) -------
-@router.put("/{id}/confirm")
-def confirm_report():
-    pass
-@router.post("/")
-def create_report():
-    return {"status": "success"}
+
 
 # ------------------------------ PATCH confirm a report ----------------------------------
 @router.patch("/{report_id}/confirm")
@@ -114,7 +108,7 @@ def confirm_report(
     return {
         "status": "confirmed",
         "message": "Merci pour votre confirmation",
-        "new_expires_at": new_expires_at.isoformat()    # DEBUG to be removed
+        "new_expires_at": new_expires_at.isoformat()    # DEBUG
     }
 
 # ------------------------------ PATCH infirm a report --------------------------------------------
@@ -138,7 +132,7 @@ def infirm_report(
     # create row in report_confirmations table
     supabase.table("report_confirmations").insert({
         "report_id": report_id,
-        "user_id": user_id,         # unicity? or automatique?
+        "user_id": user_id,
     }).execute()
 
     # Increment counter

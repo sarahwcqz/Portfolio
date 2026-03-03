@@ -15,8 +15,13 @@ class HeadingShadowPainter extends CustomPainter {
 
     final path = Path();
     path.moveTo(center.dx, center.dy);
-    path.relativeLineTo(-12, -35);
-    path.quadraticBezierTo(center.dx, -45, center.dx + 12, -35);
+    path.lineTo(center.dx - 45, center.dy - 40);
+    path.quadraticBezierTo(
+      center.dx,
+      center.dy - 55,
+      center.dx + 45,
+      center.dy - 40,
+    );
     path.close();
 
     canvas.drawPath(path, paint);

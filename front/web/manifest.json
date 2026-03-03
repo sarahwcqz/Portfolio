@@ -1,11 +1,11 @@
 {
-    "name": "front",
-    "short_name": "front",
+    "name": "Novi",
+    "short_name": "Novi",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Application de navigation accessible.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
