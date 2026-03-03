@@ -6,11 +6,12 @@ class PhoneCallService {
   // ----------------------- makeCall ------------------------------
   // either SAMU or contact
   Future<void> makeCall(String phoneNumber) async {
-    final uri = Uri.parse('tel:$phoneNumber');
-
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    } else {
+    try {
+      final uri = Uri.parse('tel:$phoneNumber');
+      
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      
+    } catch (e) {
       throw Exception('Impossible de lancer l\'appel vers $phoneNumber');
     }
   }
