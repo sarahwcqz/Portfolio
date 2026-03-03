@@ -13,7 +13,6 @@
 
 - [x] **Cloud Hosting (Render) :** FastAPI backend deployed on Render for global accessibility without the need for tunneling.
 - [x] **Automated Cleanup (Backend):** A Supabase Cron Job (`pg_cron`) automatically deletes expired reports every minute.
-- [x] **Automated Cleanup (Backend):** Supabase `pg_cron` job for automated deletion of expired reports every minute.
 - [x] **Geographic Filtering (Bounding Box):** Optimized performance by fetching only incidents visible within the map's viewport.
 - [x] **Marker Clustering (Frontend):** Smart grouping of markers to ensure a smooth 120fps experience on modern devices.
 - [x] **Real-time Geolocation:** Integrated `geolocator` with automatic user centering and permission management.
