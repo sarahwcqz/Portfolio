@@ -11,11 +11,22 @@
 
 ##  Key Implemented Features
 
+- [x] **Cloud Hosting (Render) :** FastAPI backend deployed on Render for global accessibility without the need for tunneling.
 - [x] **Automated Cleanup (Backend):** A Supabase Cron Job (`pg_cron`) automatically deletes expired reports every minute.
+- [x] **Automated Cleanup (Backend):** Supabase `pg_cron` job for automated deletion of expired reports every minute.
 - [x] **Geographic Filtering (Bounding Box):** Optimized performance by fetching only incidents visible within the map's viewport.
 - [x] **Marker Clustering (Frontend):** Smart grouping of markers to ensure a smooth 120fps experience on modern devices.
 - [x] **Real-time Geolocation:** Integrated `geolocator` with automatic user centering and permission management.
 
+---
+
+## Test the Application (Quick Start)
+
+To test the application directly on your Android device without setting up a development environment:
+
+1. **Download: :** [Download APK (v1.0.0)](https://qqgjtgvvsagpokfvrsrc.supabase.co/storage/v1/object/public/app-releases/app-arm64-v8a-release.apk)
+2. **Installation :** Allow installation from "Unknown Sources" in your device settings if prompted.
+3. **Note :** The backend is hosted on **Render**, ensuring 24/7 availability for your incident reporting tests.
 ---
 
 ##  Installation & Configuration
