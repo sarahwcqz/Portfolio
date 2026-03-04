@@ -38,7 +38,7 @@ class _MapPageState extends State<MapPage> {
   bool _isFollowMode = true;
 
   // =========================================================================
-  //                                      LIFECYCLE
+  //                                      EXECUTION
   // =========================================================================
   @override
   void initState() {
@@ -52,8 +52,14 @@ class _MapPageState extends State<MapPage> {
     super.dispose();
   }
 
+
+  // ====================================================================================
+  // ========================================= FUNCTIONS ================================
+  // ====================================================================================
+
+
   // =========================================================================
-  //                                      INITIALIZATION
+  //                                      INIT FUNCTIONS
   // =========================================================================
 
   Future<void> _initializeMap() async {
@@ -109,7 +115,7 @@ class _MapPageState extends State<MapPage> {
   }
 
   // =========================================================================
-  //                                      EVENT HANDLERS
+  //                                      EVENT FUNCTIONS
   // =========================================================================
 
   Future<void> _onRecenterPressed() async {
@@ -198,6 +204,11 @@ class _MapPageState extends State<MapPage> {
       navController.setDestinationPoint(result.latLng, address);
     }
 
+  // DEBUG : a tester
+    setState(() {
+      _isFollowMode = false;
+    });
+    
     _mapController.move(result.latLng, 15.0);
     _refreshReports();
   }
@@ -235,7 +246,7 @@ class _MapPageState extends State<MapPage> {
   }
 
   // =========================================================================
-  //                                          HELPERS
+  //                                          HELPERS FUNCTIONS
   // =========================================================================
 
   void _refreshReports() {
