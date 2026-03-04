@@ -1,8 +1,9 @@
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../config/app_config.dart';
 
 class ReportActionService {
-  final String _baseUrl = 'http://10.0.2.2:8000/api/v1';
+  final String _baseUrl = AppConfig.baseUrl;
 
   // ------------------------------ Get JWT --------------------------------
   String? _getAuthToken() {
@@ -18,6 +19,12 @@ class ReportActionService {
       throw Exception("Utilisateur non connecté");
     }
 
+  // DEBUG
+    print('URL utilisée: $_baseUrl/reports/$reportId/confirm');
+    print('Token présent: ${token.substring(0, 20)}...');
+
+
+
     final response = await http.patch(
       Uri.parse('$_baseUrl/reports/$reportId/confirm'),
       headers: {
@@ -25,6 +32,10 @@ class ReportActionService {
         'Authorization': 'Bearer $token',
       },
     );
+
+    //DEBUG
+    print('Réponse: ${response.statusCode}');
+    
 
     if (response.statusCode != 200) {
       throw Exception('Erreur: ${response.statusCode} - ${response.body}');
