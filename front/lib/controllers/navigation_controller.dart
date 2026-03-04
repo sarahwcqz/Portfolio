@@ -55,12 +55,22 @@ class NavigationController extends ChangeNotifier {
   void setStartPoint(LatLng point, String address) {
     _startPoint = point;
     _startAddress = address;
+
+    // for address change
+    _availableRoutes.clear();  
+    _selectedRouteIndex = null;
+
     notifyListeners();
   }
 
   void setDestinationPoint(LatLng point, String address) {
     _destinationPoint = point;
     _destinationAddress = address;
+
+  // for address change
+    _availableRoutes.clear();  
+    _selectedRouteIndex = null;
+
     notifyListeners();
   }
 
