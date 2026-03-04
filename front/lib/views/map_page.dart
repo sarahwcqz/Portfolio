@@ -52,11 +52,9 @@ class _MapPageState extends State<MapPage> {
     super.dispose();
   }
 
-
   // ====================================================================================
   // ========================================= FUNCTIONS ================================
   // ====================================================================================
-
 
   // =========================================================================
   //                                      INIT FUNCTIONS
@@ -204,11 +202,11 @@ class _MapPageState extends State<MapPage> {
       navController.setDestinationPoint(result.latLng, address);
     }
 
-  // DEBUG : a tester
+    // DEBUG : a tester
     setState(() {
       _isFollowMode = false;
     });
-    
+
     _mapController.move(result.latLng, 15.0);
     _refreshReports();
   }
@@ -318,51 +316,65 @@ class _MapPageState extends State<MapPage> {
           return Stack(
             children: [
               _buildMap(locationController, navController),
+              SafeArea(
+                bottom: true,
+                top: false,
+                child: Stack(
+                  children: [
+                    // ----------------------------------- address fields (not navigating)
+                    if (!navController.navigationState.isNavigating)
+                      MapAddressFields(
+                        navController: navController,
+                        onStartTap: () =>
+                            _onAddressSearchPressed(isStart: true),
+                        onDestinationTap: () =>
+                            _onAddressSearchPressed(isStart: false),
+                      ),
 
-              // ----------------------------------- address fields (not navigating)
-              if (!navController.navigationState.isNavigating)
-                MapAddressFields(
-                  navController: navController,
-                  onStartTap: () => _onAddressSearchPressed(isStart: true),
-                  onDestinationTap: () =>
-                      _onAddressSearchPressed(isStart: false),
+                    // ------------------------------------ navigation banner
+                    if (navController.navigationState.isNavigating)
+                      MapNavigationBanner(
+                        navState: navController.navigationState,
+                      ),
+
+                    // --------------------------------------- route selection cards
+                    if (navController.availableRoutes.isNotEmpty &&
+                        !navController.navigationState.isNavigating)
+                      MapRouteCards(navController: navController),
+
+                    // --------------------------------------- recenter button (when not following)
+                    if (!_isFollowMode &&
+                        navController.navigationState.isNavigating)
+                      Positioned(
+                        bottom: 147,
+                        right: 16,
+                        child: FloatingActionButton(
+                          heroTag: "recenter",
+                          onPressed: _onRecenterPressed,
+                          backgroundColor: const Color(0xFF512DA8),
+                          elevation: 4,
+                          child: const Icon(
+                            Icons.my_location,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+
+                    // ------------------------------------------- main floating buttons
+                    MapFloatingButtons(
+                      navState: navController.navigationState,
+                      navController: navController,
+                      onRecenter: _onRecenterPressed,
+                      onCalculateRoutes: _onCalculateRoutesPressed,
+                      onStartNavigation: _onStartNavigationPressed,
+                      onReportIncident: _handleReportButtonPressed,
+                    ),
+
+                    // --------------------------------------------- SOS button
+                    const SosButton(),
+                  ],
                 ),
-
-              // ------------------------------------ navigation banner
-              if (navController.navigationState.isNavigating)
-                MapNavigationBanner(navState: navController.navigationState),
-
-              // --------------------------------------- route selection cards
-              if (navController.availableRoutes.isNotEmpty &&
-                  !navController.navigationState.isNavigating)
-                MapRouteCards(navController: navController),
-
-              // --------------------------------------- recenter button (when not following)
-              if (!_isFollowMode && navController.navigationState.isNavigating)
-                Positioned(
-                  bottom: 147,
-                  right: 16,
-                  child: FloatingActionButton(
-                    heroTag: "recenter",
-                    onPressed: _onRecenterPressed,
-                    backgroundColor: const Color(0xFF512DA8),
-                    elevation: 4,
-                    child: const Icon(Icons.my_location, color: Colors.white),
-                  ),
-                ),
-
-              // ------------------------------------------- main floating buttons
-              MapFloatingButtons(
-                navState: navController.navigationState,
-                navController: navController,
-                onRecenter: _onRecenterPressed,
-                onCalculateRoutes: _onCalculateRoutesPressed,
-                onStartNavigation: _onStartNavigationPressed,
-                onReportIncident: _handleReportButtonPressed,
               ),
-
-              // --------------------------------------------- SOS button
-              const SosButton(),
             ],
           );
         },
