@@ -55,12 +55,22 @@ class NavigationController extends ChangeNotifier {
   void setStartPoint(LatLng point, String address) {
     _startPoint = point;
     _startAddress = address;
+
+    // for address change
+    _availableRoutes.clear();  
+    _selectedRouteIndex = null;
+
     notifyListeners();
   }
 
   void setDestinationPoint(LatLng point, String address) {
     _destinationPoint = point;
     _destinationAddress = address;
+
+  // for address change
+    _availableRoutes.clear();  
+    _selectedRouteIndex = null;
+
     notifyListeners();
   }
 
@@ -320,7 +330,11 @@ class NavigationController extends ChangeNotifier {
       _navigationState = _navigationState.copyWith(currentHeading: heading);
 
       if (_mapController != null) {
-        _mapController!.rotate(-heading);
+        if (_navigationState.isNavigating) {
+          _mapController!.rotate(-heading);
+        } else {
+          _mapController!.rotate(0.0);
+        }
       }
       notifyListeners();
     });

@@ -13,8 +13,14 @@ class AddressSuggestion {
 
   // converts lat + long in double
   factory AddressSuggestion.fromJson(Map<String, dynamic> json) {
+    final rawLabel = json['display_name'] as String;
+    final cleanedLabel = rawLabel
+        .split(',')
+        .take(4)
+        .map((e) => e.trim())
+        .join(', ');
     return AddressSuggestion(
-      label: json['display_name'] as String,
+      label: cleanedLabel,
       lat: double.parse(json['lat'] as String),
       lon: double.parse(json['lon'] as String),
     );

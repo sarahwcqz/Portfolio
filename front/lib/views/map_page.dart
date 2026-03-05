@@ -11,6 +11,7 @@ import '../models/picked_location_model.dart';
 import 'address_search_page.dart';
 import 'widgets/map_address_fields.dart';
 import 'widgets/map_navigation_banner.dart';
+import 'widgets/map_navigation_summary.dart';
 import 'widgets/map_route_cards.dart';
 import 'widgets/map_floating_buttons.dart';
 import 'widgets/map_reports_layer.dart';
@@ -19,6 +20,7 @@ import 'widgets/context_alerts.dart';
 import 'widgets/sos_button.dart';
 import 'widgets/emergency_contact_onboarding_dialog.dart';
 import '../services/emergency_contact_service.dart';
+import 'widgets/heading_pointer.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -28,20 +30,16 @@ class MapPage extends StatefulWidget {
 }
 
 class _MapPageState extends State<MapPage> {
-
-
   // =========================================================================
   //                                    PROPERTIES
   // ========================================================================
-  
+
   final MapController _mapController = MapController();
   final EmergencyContactService _emergencyService = EmergencyContactService();
   bool _isFollowMode = true;
 
-
-
   // =========================================================================
-  //                                      LIFECYCLE
+  //                                      EXECUTION
   // =========================================================================
   @override
   void initState() {
@@ -55,10 +53,12 @@ class _MapPageState extends State<MapPage> {
     super.dispose();
   }
 
-
+  // ====================================================================================
+  // ========================================= FUNCTIONS ================================
+  // ====================================================================================
 
   // =========================================================================
-  //                                      INITIALIZATION
+  //                                      INIT FUNCTIONS
   // =========================================================================
 
   Future<void> _initializeMap() async {
@@ -69,7 +69,7 @@ class _MapPageState extends State<MapPage> {
 
     final success = await locationController.determinePosition();
     if (!mounted) return;
-    
+
     if (!success) {
       context.showError("Erreur GPS - Vérifiez les permissions");
       return;
@@ -114,7 +114,7 @@ class _MapPageState extends State<MapPage> {
   }
 
   // =========================================================================
-  //                                      EVENT HANDLERS
+  //                                      EVENT FUNCTIONS
   // =========================================================================
 
   Future<void> _onRecenterPressed() async {
@@ -122,11 +122,13 @@ class _MapPageState extends State<MapPage> {
 
     final controller = context.read<LocationController>();
     final navController = context.read<NavigationController>();
-    
+
     await controller.determinePosition();
     if (!mounted) return;
 
-    double targetZoom = navController.navigationState.isNavigating ? 17.0 : 15.0;
+    double targetZoom = navController.navigationState.isNavigating
+        ? 17.0
+        : 15.0;
     _mapController.move(controller.currentPosition, targetZoom);
 
     _refreshReports();
@@ -134,13 +136,13 @@ class _MapPageState extends State<MapPage> {
 
   Future<void> _onCalculateRoutesPressed() async {
     final navController = context.read<NavigationController>();
-    
+
     context.showMessage("Calcul en cours...");
 
     try {
       await navController.calculateRoutes();
       if (!mounted) return;
-      
+
       context.showMessage(
         "${navController.availableRoutes.length} itinéraires trouvés !",
       );
@@ -160,11 +162,12 @@ class _MapPageState extends State<MapPage> {
       await navController.startNavigation(
         onStepReached: () => context.showMessage("Étape suivante"),
         onArrival: () => context.showSuccess("Vous êtes arrivé !"),
-        onRecalculating: () => context.showMessage("Recalcul de l'itinéraire..."),
+        onRecalculating: () =>
+            context.showMessage("Recalcul de l'itinéraire..."),
       );
-      
+
       if (!mounted) return;
-      
+
       context.hideLoader();
       _mapController.move(locationController.currentPosition, 17.0);
       context.showMessage("Navigation démarrée");
@@ -187,19 +190,24 @@ class _MapPageState extends State<MapPage> {
         ),
       ),
     );
-    
+
     if (!mounted || result == null) return;
 
     final address = result.isCurrentPosition
         ? "Ma position actuelle"
         : result.address;
-    
+
     if (isStart) {
       navController.setStartPoint(result.latLng, address);
     } else {
       navController.setDestinationPoint(result.latLng, address);
     }
-    
+
+    // DEBUG : a tester
+    setState(() {
+      _isFollowMode = false;
+    });
+
     _mapController.move(result.latLng, 15.0);
     _refreshReports();
   }
@@ -237,7 +245,7 @@ class _MapPageState extends State<MapPage> {
   }
 
   // =========================================================================
-  //                                          HELPERS
+  //                                          HELPERS FUNCTIONS
   // =========================================================================
 
   void _refreshReports() {
@@ -252,8 +260,8 @@ class _MapPageState extends State<MapPage> {
   }) {
     final navController = context.read<NavigationController>();
     final locationController = context.read<LocationController>();
-    final position = navController.currentLivePosition ??
-        locationController.currentPosition;
+    final position =
+        navController.currentLivePosition ?? locationController.currentPosition;
 
     return {
       "user_id": userId,
@@ -297,62 +305,132 @@ class _MapPageState extends State<MapPage> {
     return distance > 30;
   }
 
+  double _bannerHeight(BuildContext context) {
+    // hauteur bannière du bas = padding bottom système + contenu fixe (85)
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    return 85 + bottomPadding;
+  }
+
   // =========================================================================
   //                                              BUILD
   // =========================================================================
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Consumer2<LocationController, NavigationController>(
         builder: (context, locationController, navController, child) {
+          final isNavigating = navController.navigationState.isNavigating;
           return Stack(
             children: [
               _buildMap(locationController, navController),
-              
-              // ----------------------------------- address fields (not navigating)
-              if (!navController.navigationState.isNavigating)
-                MapAddressFields(
-                  navController: navController,
-                  onStartTap: () => _onAddressSearchPressed(isStart: true),
-                  onDestinationTap: () => _onAddressSearchPressed(isStart: false),
-                ),
-              
-              // ------------------------------------ navigation banner
-              if (navController.navigationState.isNavigating)
-                MapNavigationBanner(navState: navController.navigationState),
-              
-              // --------------------------------------- route selection cards
-              if (navController.availableRoutes.isNotEmpty &&
-                  !navController.navigationState.isNavigating)
-                MapRouteCards(navController: navController),
+              SafeArea(
+                bottom: true,
+                top: false,
+                child: Stack(
+                  children: [
+                    // --- address fields (not navigating)
+                    if (!isNavigating)
+                      MapAddressFields(
+                        navController: navController,
+                        onStartTap: () =>
+                            _onAddressSearchPressed(isStart: true),
+                        onDestinationTap: () =>
+                            _onAddressSearchPressed(isStart: false),
+                      ),
 
-              // --------------------------------------- recenter button (when not following)
-              if (!_isFollowMode && navController.navigationState.isNavigating)
-                Positioned(
-                  bottom: 147,
-                  right: 16,
-                  child: FloatingActionButton(
-                    heroTag: "recenter",
-                    onPressed: _onRecenterPressed,
-                    backgroundColor: const Color(0xFF512DA8),
-                    elevation: 4,
-                    child: const Icon(Icons.my_location, color: Colors.white),
-                  ),
+                    // --- navigation banner top
+                    if (isNavigating)
+                      MapInstructionBanner(
+                        navState: navController.navigationState,
+                      ),
+
+                    // --- navigation banner bottom
+                    if (isNavigating)
+                      Align(
+                        alignment: Alignment.bottomCenter,
+                        child: MapNavigationSummary(
+                          navState: navController.navigationState,
+                          onStop: () => navController.stopNavigation(),
+                          showRecenter: !_isFollowMode,
+                          onRecenter: _onRecenterPressed,
+                        ),
+                      ),
+
+                    // --- route selection cards
+                    if (navController.availableRoutes.isNotEmpty &&
+                        !isNavigating)
+                      MapRouteCards(navController: navController),
+
+                    // --- colonne boutons droite
+                    Align(
+                      alignment: Alignment.bottomRight,
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          right: 16,
+                          bottom: isNavigating
+                              ? _bannerHeight(context) + 16
+                              : 16 + MediaQuery.of(context).padding.bottom,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            const SosButton(),
+                            const SizedBox(height: 12),
+                            FloatingActionButton(
+                              heroTag: "report",
+                              onPressed: _handleReportButtonPressed,
+                              backgroundColor: const Color(0xFFFF9800),
+                              child: const Icon(
+                                Icons.warning_amber_rounded,
+                                color: Colors.white,
+                              ),
+                            ),
+                            if (!isNavigating && !_isFollowMode) ...[
+                              const SizedBox(height: 12),
+                              FloatingActionButton(
+                                heroTag: "gps",
+                                onPressed: _onRecenterPressed,
+                                backgroundColor: const Color(0xFF5E35B1),
+                                foregroundColor: Colors.white,
+                                child: const Icon(Icons.gps_fixed),
+                              ),
+                            ],
+                            if (navController.availableRoutes.isNotEmpty &&
+                                !isNavigating) ...[
+                              const SizedBox(height: 12),
+                              FloatingActionButton(
+                                heroTag: "start",
+                                onPressed: _onStartNavigationPressed,
+                                backgroundColor: Colors.green,
+                                child: const Icon(
+                                  Icons.navigation,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                            if (navController.startPoint != null &&
+                                navController.destinationPoint != null &&
+                                navController.availableRoutes.isEmpty &&
+                                !isNavigating) ...[
+                              const SizedBox(height: 12),
+                              FloatingActionButton(
+                                heroTag: "calculate",
+                                onPressed: _onCalculateRoutesPressed,
+                                backgroundColor: Colors.green,
+                                child: const Icon(
+                                  Icons.directions,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              
-              // ------------------------------------------- main floating buttons
-              MapFloatingButtons(
-                navState: navController.navigationState,
-                navController: navController,
-                onRecenter: _onRecenterPressed,
-                onCalculateRoutes: _onCalculateRoutesPressed,
-                onStartNavigation: _onStartNavigationPressed,
-                onReportIncident: _handleReportButtonPressed,
               ),
-              
-              // --------------------------------------------- SOS button
-              const SosButton(),
             ],
           );
         },
@@ -369,8 +447,13 @@ class _MapPageState extends State<MapPage> {
       options: MapOptions(
         initialCenter: locationController.currentPosition,
         initialZoom: 13.0,
-        minZoom: 10.0,
+        minZoom: 6.0,
         maxZoom: 18.0,
+        initialRotation: 0.0,
+        interactionOptions: const InteractionOptions(
+          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+        ),
+        // --------------------------- if mouvement on map -----------------
         onMapEvent: (event) {
           // disable follow mode on user interaction
           if (event.source == MapEventSource.onDrag ||
@@ -380,7 +463,7 @@ class _MapPageState extends State<MapPage> {
               setState(() => _isFollowMode = false);
             }
           }
-          
+
           // refresh reports on map movement
           if (event is MapEventMoveEnd || event is MapEventScrollWheelZoom) {
             context.read<ReportController>().onMapMoved(event.camera);
@@ -448,13 +531,9 @@ class _MapPageState extends State<MapPage> {
             point: navController.startPoint!,
             width: 60,
             height: 60,
-            child: const Icon(
-              Icons.location_pin,
-              color: Colors.red,
-              size: 40,
-            ),
+            child: const Icon(Icons.location_pin, color: Colors.red, size: 40),
           ),
-        
+
         // ------------------------------- dest marker
         if (navController.destinationPoint != null)
           Marker(
@@ -463,22 +542,46 @@ class _MapPageState extends State<MapPage> {
             height: 60,
             child: const Icon(Icons.flag, color: Colors.green, size: 40),
           ),
-        
+
         // ---------------------------------- current position marker
         Marker(
-          point: navController.currentLivePosition ??
+          point:
+              navController.currentLivePosition ??
               locationController.currentPosition,
-          width: 60,
-          height: 60,
-          child: Transform.rotate(
-            angle: navController.navigationState.currentHeading * (3.14159 / 180),
-            child: Icon(
-              navController.navigationState.isNavigating
-                  ? Icons.navigation
-                  : Icons.my_location,
-              color: Colors.blue,
-              size: 40,
-            ),
+          width: 120, // On passe à 120 pour que le faisceau ne soit pas coupé
+          height: 120,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Le faisceau qui tourne avec la boussole
+              Transform.rotate(
+                angle:
+                    navController.navigationState.currentHeading *
+                    (3.14159 / 180),
+                child: SizedBox(
+                  width: 120,
+                  height: 120,
+                  child: CustomPaint(painter: HeadingShadowPainter()),
+                ),
+              ),
+              // Le petit point bleu central qui reste fixe
+              Container(
+                width: 18,
+                height: 18,
+                decoration: BoxDecoration(
+                  color: Colors.blueAccent,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ],

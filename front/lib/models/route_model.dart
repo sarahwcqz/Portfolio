@@ -3,7 +3,6 @@ import 'package:latlong2/latlong.dart';
 class RouteModel {
   final String routeId;
   final String name;
-  final String description;
   final double distance;
   final double duration;
   final String color;
@@ -12,7 +11,6 @@ class RouteModel {
   RouteModel({
     required this.routeId,
     required this.name,
-    required this.description,
     required this.distance,
     required this.duration,
     required this.color,
@@ -23,7 +21,6 @@ class RouteModel {
     return RouteModel(
       routeId: json['route_id'],
       name: json['name'],
-      description: json['description'] ?? '',
       distance: json['distance'].toDouble(),
       duration: json['duration'].toDouble(),
       color: json['color'],

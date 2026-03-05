@@ -22,57 +22,27 @@ class MapFloatingButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      bottom: 16,
-      right: 16,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (navController.selectedRouteIndex != null)
           FloatingActionButton(
-            heroTag: "report",
-            onPressed: onReportIncident,
-            backgroundColor: Colors.orange,
+            heroTag: "start",
+            onPressed: onStartNavigation,
+            backgroundColor: Colors.green,
             foregroundColor: Colors.white,
-            child: const Icon(Icons.warning_amber_rounded),
+            child: const Icon(Icons.navigation),
+          )
+        else if (navController.startPoint != null &&
+            navController.destinationPoint != null)
+          FloatingActionButton(
+            heroTag: "calculate",
+            onPressed: onCalculateRoutes,
+            backgroundColor: Colors.green,
+            foregroundColor: Colors.white,
+            child: const Icon(Icons.directions),
           ),
-          const SizedBox(height: 10),
-          if (!navState.isNavigating) ...[
-            FloatingActionButton(
-              heroTag: "gps",
-              onPressed: onRecenter,
-              backgroundColor: const Color(0xFF5E35B1),
-              foregroundColor: Colors.white,
-              child: const Icon(Icons.gps_fixed),
-            ),
-            const SizedBox(height: 10),
-          ],
-          if (navState.isNavigating)
-            FloatingActionButton(
-              heroTag: "stop",
-              onPressed: () => navController.stopNavigation(),
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              child: const Icon(Icons.stop),
-            )
-          else if (navController.selectedRouteIndex != null)
-            FloatingActionButton(
-              heroTag: "start",
-              onPressed: onStartNavigation,
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-              child: const Icon(Icons.navigation),
-            )
-          else if (navController.startPoint != null &&
-              navController.destinationPoint != null)
-            FloatingActionButton(
-              heroTag: "calculate",
-              onPressed: onCalculateRoutes,
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-              child: const Icon(Icons.directions),
-            ),
-        ],
-      ),
+      ],
     );
   }
 }
