@@ -14,13 +14,14 @@ class ReportController extends ChangeNotifier {
   bool _isLoading = false;
   BoundingBox? _lastBoundingBox;
   Timer? _debounceTimer;
+  static const double minZoomLevel = 13.0;
 
   List<ReportModel> get reports => _reports;
   bool get isLoading => _isLoading;
 
   Future<bool> addReport(Map<String, dynamic> data) async {
     _isLoading = true;
-    notifyListeners(); // On prévient l'UI qu'on travaille
+    notifyListeners();
 
     try {
       // On demande au service de faire la requête HTTP
@@ -31,7 +32,7 @@ class ReportController extends ChangeNotifier {
       return false;
     } finally {
       _isLoading = false;
-      notifyListeners(); // On a fini
+      notifyListeners();
     }
   }
 
@@ -44,16 +45,23 @@ class ReportController extends ChangeNotifier {
   void onMapMoved(MapCamera camera) {
     debugPrint('onMapMoved appelé'); // DEBUG
 
+    // if zoom < 13, no charging of reports (DB) + no display of reports already charged (UI)
+    if (camera.zoom < minZoomLevel) {
+      if (_reports.isNotEmpty) {
+        _reports = [];
+        notifyListeners();
+      }
+      return;
+    }
+
+
     final bbox = _getBoundingBoxFromCamera(camera);
     debugPrint(
       'bbox: ${bbox.minLat}, ${bbox.maxLat}, ${bbox.minLng}, ${bbox.maxLng}',
     ); // DEBUG
 
     // if mvmt too small, ignore
-    if (!bbox.hasSignificantlyChangedFrom(_lastBoundingBox)) {
-      debugPrint('Changement ignoré car trop insignifiant'); // DEBUG
-      return;
-    }
+    if (!bbox.hasSignificantlyChangedFrom(_lastBoundingBox)) return;
 
     // Reset timer when mvmt
     _debounceTimer?.cancel();

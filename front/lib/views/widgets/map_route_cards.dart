@@ -65,14 +65,6 @@ class MapRouteCards extends StatelessWidget {
                             color: isSelected ? Colors.white : Colors.black,
                           ),
                         ),
-                        if (route.description.isNotEmpty)
-                          Text(
-                            route.description,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: isSelected ? Colors.white70 : Colors.grey,
-                            ),
-                          ),
                         const SizedBox(height: 4),
                         Text(
                           '${(route.distance / 1000).toStringAsFixed(1)} km · ${(route.duration / 60).toStringAsFixed(0)} min',
