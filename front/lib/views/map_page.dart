@@ -369,7 +369,7 @@ class _MapPageState extends State<MapPage> {
                           right: 16,
                           bottom: isNavigating
                               ? _bannerHeight(context) + 16
-                              : 90,
+                              : 16 + MediaQuery.of(context).padding.bottom,
                         ),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -386,14 +386,16 @@ class _MapPageState extends State<MapPage> {
                                 color: Colors.white,
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            FloatingActionButton(
-                              heroTag: "gps",
-                              onPressed: _onRecenterPressed,
-                              backgroundColor: const Color(0xFF5E35B1),
-                              foregroundColor: Colors.white,
-                              child: const Icon(Icons.gps_fixed),
-                            ),
+                            if (!isNavigating && !_isFollowMode) ...[
+                              const SizedBox(height: 12),
+                              FloatingActionButton(
+                                heroTag: "gps",
+                                onPressed: _onRecenterPressed,
+                                backgroundColor: const Color(0xFF5E35B1),
+                                foregroundColor: Colors.white,
+                                child: const Icon(Icons.gps_fixed),
+                              ),
+                            ],
                             if (navController.availableRoutes.isNotEmpty &&
                                 !isNavigating) ...[
                               const SizedBox(height: 12),
