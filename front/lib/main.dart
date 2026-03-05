@@ -8,6 +8,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 // login page
 import 'views/login_page.dart';
+import 'views/map_page.dart';
 import 'controllers/auth_controller.dart';
 import 'controllers/address_search_controller.dart';
 import 'controllers/location_controller.dart';
@@ -24,6 +25,11 @@ Future<void> main() async {
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL']!,
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+
+    // to keep the session when closing + reopening the app
+    authOptions: const FlutterAuthClientOptions(
+      authFlowType: AuthFlowType.pkce,
+    ),
   );
 
   runApp(const MyApp());
@@ -51,8 +57,22 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'Novi',
         theme: ThemeData.dark(),
-        home: const LoginPage(),
+        home: _getInitialPage(),
       ),
     );
+  }
+
+  // if user already logged in, no need to go through login_page
+  Widget _getInitialPage() {
+    // is there a session already?
+    final session = Supabase.instance.client.auth.currentSession;
+    
+    if (session != null) {
+      // if yes
+      return const MapPage();
+    } else {
+      // if not
+      return const LoginPage();
+    }
   }
 }
