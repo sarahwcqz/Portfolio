@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../models/navigation_state_model.dart';
 
-class MapNavigationBanner extends StatelessWidget {
+class MapInstructionBanner extends StatelessWidget {
   final NavigationState navState;
 
-  const MapNavigationBanner({
-    super.key,
-    required this.navState,
-  });
+  const MapInstructionBanner({super.key, required this.navState});
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +47,9 @@ class MapNavigationBanner extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               navState.currentStepIndex < navState.instructions.length
-                  ? navState.instructions[navState.currentStepIndex]['instruction'] ?? ''
+                  ? navState.instructions[navState
+                            .currentStepIndex]['instruction'] ??
+                        ''
                   : "Vous êtes arrivé !",
               style: const TextStyle(
                 color: Colors.white,

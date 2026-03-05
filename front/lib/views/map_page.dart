@@ -11,6 +11,7 @@ import '../models/picked_location_model.dart';
 import 'address_search_page.dart';
 import 'widgets/map_address_fields.dart';
 import 'widgets/map_navigation_banner.dart';
+import 'widgets/map_navigation_summary.dart';
 import 'widgets/map_route_cards.dart';
 import 'widgets/map_floating_buttons.dart';
 import 'widgets/map_reports_layer.dart';
@@ -304,15 +305,21 @@ class _MapPageState extends State<MapPage> {
     return distance > 30;
   }
 
+  double _bannerHeight(BuildContext context) {
+    // hauteur bannière du bas = padding bottom système + contenu fixe (85)
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    return 85 + bottomPadding;
+  }
+
   // =========================================================================
   //                                              BUILD
   // =========================================================================
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Consumer2<LocationController, NavigationController>(
         builder: (context, locationController, navController, child) {
+          final isNavigating = navController.navigationState.isNavigating;
           return Stack(
             children: [
               _buildMap(locationController, navController),
@@ -321,8 +328,8 @@ class _MapPageState extends State<MapPage> {
                 top: false,
                 child: Stack(
                   children: [
-                    // ----------------------------------- address fields (not navigating)
-                    if (!navController.navigationState.isNavigating)
+                    // --- address fields (not navigating)
+                    if (!isNavigating)
                       MapAddressFields(
                         navController: navController,
                         onStartTap: () =>
@@ -331,47 +338,94 @@ class _MapPageState extends State<MapPage> {
                             _onAddressSearchPressed(isStart: false),
                       ),
 
-                    // ------------------------------------ navigation banner
-                    if (navController.navigationState.isNavigating)
-                      MapNavigationBanner(
+                    // --- navigation banner top
+                    if (isNavigating)
+                      MapInstructionBanner(
                         navState: navController.navigationState,
                       ),
 
-                    // --------------------------------------- route selection cards
-                    if (navController.availableRoutes.isNotEmpty &&
-                        !navController.navigationState.isNavigating)
-                      MapRouteCards(navController: navController),
-
-                    // --------------------------------------- recenter button (when not following)
-                    if (!_isFollowMode &&
-                        navController.navigationState.isNavigating)
-                      Positioned(
-                        bottom: 147,
-                        right: 16,
-                        child: FloatingActionButton(
-                          heroTag: "recenter",
-                          onPressed: _onRecenterPressed,
-                          backgroundColor: const Color(0xFF512DA8),
-                          elevation: 4,
-                          child: const Icon(
-                            Icons.my_location,
-                            color: Colors.white,
-                          ),
+                    // --- navigation banner bottom
+                    if (isNavigating)
+                      Align(
+                        alignment: Alignment.bottomCenter,
+                        child: MapNavigationSummary(
+                          navState: navController.navigationState,
+                          onStop: () => navController.stopNavigation(),
+                          showRecenter: !_isFollowMode,
+                          onRecenter: _onRecenterPressed,
                         ),
                       ),
 
-                    // ------------------------------------------- main floating buttons
-                    MapFloatingButtons(
-                      navState: navController.navigationState,
-                      navController: navController,
-                      onRecenter: _onRecenterPressed,
-                      onCalculateRoutes: _onCalculateRoutesPressed,
-                      onStartNavigation: _onStartNavigationPressed,
-                      onReportIncident: _handleReportButtonPressed,
-                    ),
+                    // --- route selection cards
+                    if (navController.availableRoutes.isNotEmpty &&
+                        !isNavigating)
+                      MapRouteCards(navController: navController),
 
-                    // --------------------------------------------- SOS button
-                    const SosButton(),
+                    // --- colonne boutons droite
+                    Align(
+                      alignment: Alignment.bottomRight,
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          right: 16,
+                          bottom: isNavigating
+                              ? _bannerHeight(context) + 16
+                              : 90,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            const SosButton(),
+                            const SizedBox(height: 12),
+                            FloatingActionButton(
+                              heroTag: "report",
+                              onPressed: _handleReportButtonPressed,
+                              backgroundColor: const Color(0xFFFF9800),
+                              child: const Icon(
+                                Icons.warning_amber_rounded,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            FloatingActionButton(
+                              heroTag: "gps",
+                              onPressed: _onRecenterPressed,
+                              backgroundColor: const Color(0xFF5E35B1),
+                              foregroundColor: Colors.white,
+                              child: const Icon(Icons.gps_fixed),
+                            ),
+                            if (navController.availableRoutes.isNotEmpty &&
+                                !isNavigating) ...[
+                              const SizedBox(height: 12),
+                              FloatingActionButton(
+                                heroTag: "start",
+                                onPressed: _onStartNavigationPressed,
+                                backgroundColor: Colors.green,
+                                child: const Icon(
+                                  Icons.navigation,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                            if (navController.startPoint != null &&
+                                navController.destinationPoint != null &&
+                                navController.availableRoutes.isEmpty &&
+                                !isNavigating) ...[
+                              const SizedBox(height: 12),
+                              FloatingActionButton(
+                                heroTag: "calculate",
+                                onPressed: _onCalculateRoutesPressed,
+                                backgroundColor: Colors.green,
+                                child: const Icon(
+                                  Icons.directions,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
