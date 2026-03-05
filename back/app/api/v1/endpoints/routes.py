@@ -61,7 +61,6 @@ async def calculate_route(payload: RouteRequest = Body(...)):
                 {
                     "route_id": "avoid",
                     "name": "itinéraire le plus sur",
-                    "description": f"Évite {len(danger_zones)} zone(s) signalée(s)",
                     "coordinates": route2["coordinates"],
                     "duration": route2["duration"],
                     "distance": route2["distance"],
