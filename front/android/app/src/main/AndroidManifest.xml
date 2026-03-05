@@ -16,7 +16,9 @@
         android:label="Novi"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        tools:replace="android:label">
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        tools:replace="android:label,android:allowBackup">
         <activity
             android:name=".MainActivity"
             android:exported="true"
