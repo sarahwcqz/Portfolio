@@ -1,4 +1,4 @@
-#  France Urban Reporting — Incident Tracking App
+#  Novi — Route Planner
 
 ![Flutter](https://img.shields.io/badge/Flutter-%2302569B.svg?style=for-the-badge&logo=Flutter&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)
@@ -8,6 +8,23 @@
 > Features automated data maintenance, geographic filtering, and high-performance mapping.
 
 ---
+
+## Table of Contents
+1. [Introduction](#introduction)
+2. [How to Use the App](#how-to-use-the-app)
+3. [Technical Information](#technical-information)
+4. [What's Next?](#whats-next)
+
+
+## Introduction
+
+## How to Use the App
+
+## Technical Information
+
+##  What's Next?
+
+
 
 ##  Key Implemented Features
 
@@ -82,5 +99,5 @@ Timezone Reminder: The Supabase server operates on UTC time. Test incidents crea
 
 ##  Authors
 
-* **[Sarah Wacquiez]**
-* **[Christophe Saniez-Lenthieul]**
+* **[Sarah Wacquiez](https://github.com/sarahwcqz)**
+* **[Christophe Saniez-Lenthieul](https://github.com/Saniez-l)**
