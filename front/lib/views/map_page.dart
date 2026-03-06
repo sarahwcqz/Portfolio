@@ -351,6 +351,7 @@ class _MapPageState extends State<MapPage> {
                         child: MapNavigationSummary(
                           navState: navController.navigationState,
                           onStop: () => navController.stopNavigation(),
+                          arrivalTime: navController.arrivalTime,
                           showRecenter: !_isFollowMode,
                           onRecenter: _onRecenterPressed,
                         ),

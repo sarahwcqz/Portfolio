@@ -57,7 +57,7 @@ class NavigationController extends ChangeNotifier {
     _startAddress = address;
 
     // for address change
-    _availableRoutes.clear();  
+    _availableRoutes.clear();
     _selectedRouteIndex = null;
 
     notifyListeners();
@@ -67,8 +67,8 @@ class NavigationController extends ChangeNotifier {
     _destinationPoint = point;
     _destinationAddress = address;
 
-  // for address change
-    _availableRoutes.clear();  
+    // for address change
+    _availableRoutes.clear();
     _selectedRouteIndex = null;
 
     notifyListeners();
@@ -135,6 +135,10 @@ class NavigationController extends ChangeNotifier {
       deviationCounter: 0,
     );
 
+    if (_currentLivePosition != null) {
+      _updateNavigation(_currentLivePosition!);
+    }
+
     // ACTIVER Wakelock
     WakelockPlus.enable();
 
@@ -197,16 +201,15 @@ class NavigationController extends ChangeNotifier {
     }
 
     final routePoints = _availableRoutes[_selectedRouteIndex!].points;
+
     final distanceFromRoute = _locationService.distanceToPolyline(
       currentPosition,
       routePoints,
     );
 
     int newDeviationCounter = _navigationState.deviationCounter;
-
     if (distanceFromRoute > 30) {
       newDeviationCounter++;
-      // CHANGEMENT : Si on dévie trop, on lance le recalcul intelligent
       if (newDeviationCounter >= 16 && !_isRecalculating) {
         _recalculateRouteAutomatically(currentPosition);
         return;
@@ -214,15 +217,12 @@ class NavigationController extends ChangeNotifier {
     } else {
       newDeviationCounter = 0;
     }
-
-    // Gestion des index de points pour les instructions
     int pointIndex;
     try {
       final currentInstruction =
           _navigationState.instructions[_navigationState.currentStepIndex];
       final wayPoints = currentInstruction['way_points'] as List<dynamic>;
       pointIndex = wayPoints[1] as int;
-
       if (pointIndex >= routePoints.length) pointIndex = routePoints.length - 1;
     } catch (e) {
       pointIndex =
@@ -233,39 +233,45 @@ class NavigationController extends ChangeNotifier {
     }
 
     final targetPoint = routePoints[pointIndex];
-    double distance = _locationService.calculateDistance(
+
+    double distNextStep = _locationService.calculateDistance(
       currentPosition,
       targetPoint,
     );
 
-    // Gestion de l'arrivée et des étapes
-    if (distance < 25) {
+    double totalDist = calculateTotalRemainingDistance(
+      currentPosition,
+      routePoints,
+      pointIndex,
+    );
+
+    int timeRemaining = (totalDist / 70).ceil();
+
+    if (distNextStep < 25) {
       bool isLastInstruction =
           _navigationState.currentStepIndex >=
           _navigationState.instructions.length - 1;
 
       if (isLastInstruction) {
-        _navigationState = _navigationState.copyWith(
-          distanceToNextStep: 0,
-          distanceFromRoute: distanceFromRoute,
-          deviationCounter: 0,
-        );
-        notifyListeners();
         _onArrival?.call();
         stopNavigation();
         return;
       } else {
         _navigationState = _navigationState.copyWith(
           currentStepIndex: _navigationState.currentStepIndex + 1,
-          distanceToNextStep: distance,
+          distanceToNextStep: distNextStep,
+          totalDistanceRemaining: totalDist,
+          durationRemaining: timeRemaining,
           distanceFromRoute: distanceFromRoute,
-          deviationCounter: newDeviationCounter,
+          deviationCounter: 0,
         );
         _onStepReached?.call();
       }
     } else {
       _navigationState = _navigationState.copyWith(
-        distanceToNextStep: distance,
+        distanceToNextStep: distNextStep,
+        totalDistanceRemaining: totalDist,
+        durationRemaining: timeRemaining,
         distanceFromRoute: distanceFromRoute,
         deviationCounter: newDeviationCounter,
       );
@@ -273,7 +279,6 @@ class NavigationController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --- RECALCUL INTELLIGENT ---
   Future<void> _recalculateRouteAutomatically(LatLng currentPosition) async {
     if (_isRecalculating || _destinationPoint == null) return;
     _isRecalculating = true;
@@ -290,13 +295,10 @@ class NavigationController extends ChangeNotifier {
 
       _availableRoutes = await _routingService.calculateRoutes(request);
 
-      // CHANGEMENT : Au lieu de forcer l'index 0, on cherche dynamiquement
-      // la route qui correspond à l'ID préféré de l'utilisateur ('shortest' ou 'avoid')
       _selectedRouteIndex = _availableRoutes.indexWhere(
         (r) => r.routeId == _preferredRouteId,
       );
 
-      // Sécurité : si la route préférée n'existe plus, on prend la première
       if (_selectedRouteIndex == -1) _selectedRouteIndex = 0;
 
       final selectedRoute = _availableRoutes[_selectedRouteIndex!];
@@ -370,5 +372,43 @@ class NavigationController extends ChangeNotifier {
       default:
         return Colors.blue;
     }
+  }
+
+  double calculateTotalRemainingDistance(
+    LatLng currentPos,
+    List<LatLng> routePoints,
+    int currentIndex,
+  ) {
+    double total = 0.0;
+
+    total += const Distance().as(
+      LengthUnit.Meter,
+      currentPos,
+      routePoints[currentIndex],
+    );
+
+    for (int i = currentIndex; i < routePoints.length - 1; i++) {
+      total += const Distance().as(
+        LengthUnit.Meter,
+        routePoints[i],
+        routePoints[i + 1],
+      );
+    }
+
+    return total;
+  }
+
+  String get arrivalTime {
+    if (!_navigationState.isNavigating) return "--:--";
+
+    final now = DateTime.now();
+    final arrival = now.add(
+      Duration(minutes: _navigationState.durationRemaining),
+    );
+
+    final hours = arrival.hour.toString().padLeft(2, '0');
+    final minutes = arrival.minute.toString().padLeft(2, '0');
+
+    return "$hours:$minutes";
   }
 }
