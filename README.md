@@ -23,7 +23,7 @@
 
 To test the application directly on your Android device without setting up a development environment:
 
-1. **Download: :** [Download APK (v1.0.0)](https://qqgjtgvvsagpokfvrsrc.supabase.co/storage/v1/object/public/app-releases/app-arm64-v8a-release.apk)
+1. **Download: :** [Download APK (v1.0.0)](https://qqgjtgvvsagpokfvrsrc.supabase.co/storage/v1/object/public/app-releases/app-arm64-v8a-release1.apk)
 2. **Installation :** Allow installation from "Unknown Sources" in your device settings if prompted.
 3. **Note :** The backend is hosted on **Render**, ensuring 24/7 availability for your incident reporting tests.
 ---
