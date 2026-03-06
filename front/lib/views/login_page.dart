@@ -91,12 +91,12 @@ class _LoginPageState extends State<LoginPage> {
     // Gets screen's size
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    
+
     // calculates sizes to be adaptative
     final logoSize = screenWidth * 0.5;
     final maxLogoSize = 250.0;
     final actualLogoSize = logoSize > maxLogoSize ? maxLogoSize : logoSize;
-    
+
     final horizontalPadding = screenWidth * 0.05;
     final maxWidth = 400.0;
 
@@ -104,7 +104,8 @@ class _LoginPageState extends State<LoginPage> {
       backgroundColor: Colors.black,
       body: SafeArea(
         child: Center(
-          child: SingleChildScrollView(  // allow scroll 
+          child: SingleChildScrollView(
+            // allow scroll
             padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: maxWidth),
@@ -117,9 +118,9 @@ class _LoginPageState extends State<LoginPage> {
                     width: actualLogoSize,
                     height: actualLogoSize,
                   ),
-                  
+
                   SizedBox(height: screenHeight * 0.04),
-                  
+
                   // --------------------------------------- email
                   TextField(
                     controller: _emailController,
@@ -130,9 +131,9 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     keyboardType: TextInputType.emailAddress,
                   ),
-                  
+
                   SizedBox(height: screenHeight * 0.02),
-                  
+
                   // --------------------------------------- pwd
                   TextField(
                     controller: _passwordController,
@@ -143,9 +144,9 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     obscureText: true,
                   ),
-                  
+
                   SizedBox(height: screenHeight * 0.03),
-                  
+
                   // --------------------------------- BUTTONS --------------
                   Consumer<AuthController>(
                     builder: (context, controller, child) {
@@ -171,9 +172,9 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             ),
                           ),
-                          
+
                           const SizedBox(height: 12),
-                          
+
                           // ------------------------------------- creer un compte button
                           SizedBox(
                             width: double.infinity,

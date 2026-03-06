@@ -7,21 +7,24 @@ class MapNavigationSummary extends StatelessWidget {
   final VoidCallback onStop;
   final bool showRecenter;
   final VoidCallback? onRecenter;
+  final String arrivalTime;
 
   const MapNavigationSummary({
     super.key,
     required this.navState,
     required this.onStop,
+    required this.arrivalTime,
     this.showRecenter = false,
     this.onRecenter,
   });
 
   @override
   Widget build(BuildContext context) {
-    int minutesRemaining = (navState.distanceToNextStep / 83).ceil();
-    String arrivalTime = DateFormat(
-      'HH:mm',
-    ).format(DateTime.now().add(Duration(minutes: minutesRemaining)));
+    int minutesRemaining = navState.durationRemaining;
+    double totalDist = navState.totalDistanceRemaining;
+    String distDisplay = totalDist >= 1000
+        ? "${(totalDist / 1000).toStringAsFixed(1)} km"
+        : "${totalDist.toInt()} m";
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
@@ -51,7 +54,7 @@ class MapNavigationSummary extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  "${(navState.distanceToNextStep / 1000).toStringAsFixed(1)} km • $arrivalTime",
+                  "$distDisplay • $arrivalTime",
                   style: const TextStyle(color: Colors.grey, fontSize: 16),
                 ),
               ],
